@@ -5184,7 +5184,7 @@ class MainUISettings:
 
         r3 = tk.Frame(body, bg=BG_POP)
         r3.pack(fill="x", pady=(0, 8))
-        self.bgm_var = tk.BooleanVar(value=cfg.get("bg_monitor", False))
+        self.bgm_var = tk.BooleanVar(value=cfg.get("bg_monitor", True))
         bgm_lbl = tk.Label(r3, text="BACKGROUND MONITORING", font=lf, bg=BG_POP, fg=TD)
         bgm_lbl.pack(side="left")
         self._bgm_box = tk.Label(r3, text="☑" if self.bgm_var.get() else "☐",
@@ -5645,13 +5645,14 @@ class _LogEventHandler(FileSystemEventHandler):
 # presse-papiers, au lieu de les multiplier par le nombre de pilotes.
 class MainUI:
 
-    MAIN_W    = 420   # largeur par défaut ET minimale
+    MAIN_W    = 540   # Includes the live target DPS column.
     # Largeurs fixes des colonnes ; seule la colonne du nom s'étire, parce que
     # c'est la seule dont la longueur varie d'un joueur à l'autre.
     _TV_NET  = 100   # TOTAL NET (wide enough for the "TOTAL NET" header so it doesn't overflow)
     _TV_HR   = 85    # ISK/HR
     _TV_SES  = 68    # SESSION (HH:MM:SS)
-    _TV_DPS  = 30    # DPS overlay toggle glyph
+    _TV_DPS  = 40    # Separate overlay toggle glyph
+    _TV_TARGET_DPS = 95
 
     def __init__(self):
         self.root = tk.Tk()
@@ -6038,7 +6039,7 @@ class MainUI:
         # ── Treeview ──────────────────────────────────────────────────
         self._tree = ttk.Treeview(
             body, style="RatTV.Treeview",
-            columns=("char", "net", "isk_hr", "session", "dps"),
+            columns=("char", "target_dps", "net", "isk_hr", "session", "dps"),
             show="headings", selectmode="none", takefocus=False,
         )
         tv = self._tree
@@ -6051,13 +6052,15 @@ class MainUI:
         tv.heading("net",     text="TOTAL NET",  anchor="center", command=lambda: None)
         tv.heading("isk_hr",  text="ISK/HR",     anchor="center", command=lambda: None)
         tv.heading("session", text="SESSION",    anchor="center", command=lambda: None)
-        tv.heading("dps",     text="DPS",        anchor="center", command=lambda: None)
+        tv.heading("dps",     text="OVL",        anchor="center", command=lambda: None)
+        tv.heading("target_dps", text="TARGET DPS", anchor="center", command=lambda: None)
 
         tv.column("char",    stretch=True,  minwidth=60,  width=140, anchor="w")
         tv.column("net",     stretch=False, minwidth=24,  width=self._TV_NET,  anchor="center")
         tv.column("isk_hr",  stretch=False, minwidth=24,  width=self._TV_HR,   anchor="center")
         tv.column("session", stretch=False, minwidth=24,  width=self._TV_SES,  anchor="center")
         tv.column("dps",     stretch=False, minwidth=24,  width=self._TV_DPS,  anchor="center")
+        tv.column("target_dps", stretch=False, minwidth=80, width=self._TV_TARGET_DPS, anchor="center")
 
         # Largeurs de colonnes personnalisées, restaurées d'une session à l'autre :
         # les redimensionner à chaque lancement serait vite lassant.
@@ -6113,7 +6116,7 @@ class MainUI:
             visible  = win.root.winfo_viewable()
             name_txt = f"★ {win.char_name[:18]}" + ("…" if len(win.char_name) > 18 else "")
             tv.insert("", "end", iid=char_id,
-                      values=(name_txt, "-", "-", "00:00:00", "○"),
+                      values=(name_txt, "—", "-", "-", "00:00:00", "○"),
                       tags=("vis" if visible else "hid",))
             self._rows[char_id] = char_id   # iid == char_id
             self._restore_overlay(char_id)
@@ -6298,9 +6301,9 @@ class MainUI:
         tv_w  = self._tree.winfo_width() or self.MAIN_W
         try:
             fixed = sum(self._tree.column(c, "width")
-                        for c in ("net", "isk_hr", "session", "dps"))
+                        for c in ("target_dps", "net", "isk_hr", "session", "dps"))
         except Exception:
-            fixed = self._TV_NET + self._TV_HR + self._TV_SES + self._TV_DPS
+            fixed = self._TV_TARGET_DPS + self._TV_NET + self._TV_HR + self._TV_SES + self._TV_DPS
         char_w = max(60, tv_w - fixed)
         self._tree.column("char", width=char_w)
 
@@ -6309,7 +6312,7 @@ class MainUI:
         saved = self.cfg.get("main_ui", {}).get("col_widths", {})
         if not saved or not self._tree:
             return
-        for col in ("net", "isk_hr", "session", "dps"):
+        for col in ("target_dps", "net", "isk_hr", "session", "dps"):
             w = saved.get(col)
             if isinstance(w, int) and w >= 20:
                 try:
@@ -6327,7 +6330,7 @@ class MainUI:
             return
         try:
             widths = {c: self._tree.column(c, "width")
-                      for c in ("net", "isk_hr", "session", "dps")}
+                      for c in ("target_dps", "net", "isk_hr", "session", "dps")}
             mui = self.cfg.setdefault("main_ui", {})
             if mui.get("col_widths") != widths:
                 mui["col_widths"] = widths
@@ -6461,6 +6464,7 @@ class MainUI:
             # gain connu et on marque la ligne hors ligne, pour ne pas laisser croire que
             # des chiffres figés sont à jour.
             if suspended:
+                self._tv_set(char_id, "target_dps", "OFFLINE")
                 d       = win.data
                 net_tot = d.bg * (1 - d.tax) + d.loot_val
                 self._tv_tag(char_id, "standby", False)   # orange — offline
@@ -6474,6 +6478,7 @@ class MainUI:
 
             frozen = (now - getattr(win, "_last_tick_wall", now)) > 1.5
             if frozen:
+                self._tv_set(char_id, "target_dps", "NO TICK")
                 self._tv_tag(char_id, "frozen", vis)
                 self._tv_set(char_id, "net",     "— NO TICK —")
                 self._tv_set(char_id, "isk_hr",  "—")
@@ -6482,6 +6487,13 @@ class MainUI:
 
             d      = win.data
             st     = win._st
+            # Read the shared meter directly: independent of dashboard visibility,
+            # bounty payouts and session length. Never present a paused value as live.
+            if st == "running":
+                value = f"{d.combat.snapshot()['target_dps']:,.0f}"
+            else:
+                value = "PAUSED" if st == "paused" else "STOPPED"
+            self._tv_set(char_id, "target_dps", value)
             sec    = d.secs()
             net_tot = d.bg * (1 - d.tax) + d.loot_val
             isk_hr  = d.isk()
@@ -6525,7 +6537,7 @@ class MainUI:
             return
         char_cfg = self.cfg.setdefault("chars", {}).setdefault(char_id, {})
 
-        bg_monitor = self.cfg.get("bg_monitor", False)
+        bg_monitor = self.cfg.get("bg_monitor", True)
 
         if win.root.winfo_viewable() and title_visible(rectangle(win.root), work_areas(self.root)):
             # MASQUER : on retire la fenêtre principale et tous les panneaux détachés, en
@@ -6721,6 +6733,9 @@ class MainUI:
         saved = self.cfg.get("main_ui", {}).get("geometry", "")
         if saved:
             self.root.geometry(saved)
+            self.root.update_idletasks()
+            if self.root.winfo_width() < self.MAIN_W:
+                self.root.geometry(f"{self.MAIN_W}x{self.root.winfo_height()}")
         else:
             self.root.geometry(f"{self.MAIN_W}x300+10+80")
         recover_if_offscreen(self.root, self.root)

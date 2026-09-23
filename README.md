@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.7.1
+# Eve-Overlay-Evolved v0.7.2
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.7.1`.
+**Release tag:** `v0.7.2`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,35 +36,28 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.7.1
+## What's new in v0.7.2
 
-- The amber panel is now **INCOMING CAP DRAIN** and includes neutralizers
-  and incoming **Nosferatu** in its session total, 15-second GJ/sec rate
-  and source rankings.
-- Separate **NEUT** and **NOS** subtotals appear below the combined values;
-  each source's hover details also show the split and last module.
-- Negative `GJ energy drained to` entries count as positive capacitor loss.
-  Capacitor gained via `drained from`, wrong signs and unknown colors are excluded.
-- Separate Nos and combined drain fields are saved alongside existing neut
-  history fields. Old neut history keeps its original meaning.
-- An expanded anonymized fixture validates 130 records: **2,307 GJ neut +
-  1,641 GJ Nos = 3,948 GJ**. Separate same-second activations are retained.
-
-The release retains portable START.bat startup, dashboard recovery,
-aqua target DPS, red incoming damage and contributor/upstream attribution.
-See [CHANGELOG.md](CHANGELOG.md) and [RELEASE-NOTES.md](RELEASE-NOTES.md).
+- Live **TARGET DPS** values now appear beside each character in the fleet overview.
+- Uses the same latest-hit target and rolling 15-second calculation as the dashboard,
+  refreshed every 500 ms, even before the first bounty payout.
+- PAUSED, STOPPED, OFFLINE and NO TICK labels distinguish inactive/stale data.
+- **OVL** keeps the separate overlay toggle and right-click menu.
+- Background Monitoring defaults on for new settings. Existing preferences remain;
+  enable it before hiding dashboards to keep the fleet DPS values live.
+- Older narrow overview windows expand to fit the new column.
 
 ## Interface layout
 
 The **fleet overview** is the main hub: one row per character with total
-net ISK, ISK/hour, session time and the detached DPS-overlay toggle. Its
+target DPS, net ISK, ISK/hour, session time and the detached DPS-overlay toggle. Its
 header provides Settings, Fleet Manager, clipboard lock and Quit. Hover
 the application title for contributor and upstream credits. **SHOW PANELS**
 beside ACTIVE RATTING FLEET brings dashboards back next to the overview.
-Click a character row to show/hide that pilot's dashboard; the DPS column
+Click a character row to show/hide that pilot's dashboard; the OVL column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.7.1](overview-v0.7.1.png)
+![Fleet overview in v0.7.2](overview-v0.7.2.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
@@ -85,7 +78,7 @@ Each **character dashboard** is arranged from top to bottom:
 across themes. Other panels follow the selected theme.*
 
 ISK, Missions, Anomalies and Alerts can detach into separate windows.
-The independent DPS overlay remains available from the overview's DPS cell:
+The independent DPS overlay remains available from the overview's OVL cell:
 left-click to toggle; right-click for position and view options. It shows
 total outgoing/incoming DPS, a graph, or both. Windows transparency and
 click-through behavior are intended for borderless/fixed-window play.
@@ -236,7 +229,7 @@ All app state is stored beside `ratting.py`:
 The `ratting_*` filenames and `ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app, extract v0.7.1 into a new folder, and copy
+To upgrade, close the old app, extract v0.7.2 into a new folder, and copy
 `ratting_config.json` and `ratting_history.json` into it before launching.
 The caches may also be copied. Do not overwrite the new runtime/source
 with files from the old release.
@@ -254,7 +247,7 @@ python ratting.py
 Keep the helper modules beside `ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.7.1 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.7.2 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -268,8 +261,8 @@ hash-pinned wheels, runs a runtime self-test and all four regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -289,7 +282,7 @@ runtime\python.exe -I -B tests\test_neuts.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.7.1` tag; the portable ZIP is the downloadable release
+belongs to the `v0.7.2` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -308,7 +301,7 @@ asset, distinct from GitHub's source-only ZIP.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 60 automated checks and clean-extraction startup without
+Validation covers 63 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
 previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.

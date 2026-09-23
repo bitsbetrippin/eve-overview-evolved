@@ -1,5 +1,5 @@
 ================================================================
- EVE-OVERLAY-EVOLVED v0.7.1 — HOW TO USE
+ EVE-OVERLAY-EVOLVED v0.7.2 — HOW TO USE
 ================================================================
 
 A passive desktop dashboard for EVE Online PvE pilots. It reads
@@ -42,11 +42,11 @@ It does NOT touch the EVE client, network traffic or memory.
   needs is in the gamelog.
 
 ----------------------------------------------------------------
- 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.1
+ 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.2
 ----------------------------------------------------------------
 
   PORTABLE RELEASE:
-    Download Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip.
+    Download Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip.
     Right-click it, choose Extract All, then open the extracted
     folder and double-click START.bat. Keep all files together.
 
@@ -62,7 +62,7 @@ It does NOT touch the EVE client, network traffic or memory.
     including OneDrive and redirected folders. Saved custom log
     paths are preserved; change them in Settings if needed.
 
-  INCOMING CAPACITOR DRAIN (v0.7.1):
+  INCOMING CAPACITOR DRAIN (v0.7.2):
     The amber INCOMING CAP DRAIN panel sits below TOP INCOMING DAMAGE.
     It combines neutralizer and Nosferatu loss in its session GJ and GJ/sec.
     Separate NEUT/NOS subtotals and top-source hover details show the split.
@@ -149,9 +149,9 @@ It does NOT touch the EVE client, network traffic or memory.
     Green ★     Character window is visible — data tracking ON
     Orange ★    Character window is hidden  — data tracking OFF
 
-  Click any cell EXCEPT the DPS cell to TOGGLE that character's
-  dashboard window (show/hide). Click the DPS cell to open or
-  close that character's DPS overlay; right-click the DPS cell
+  Click any cell EXCEPT the OVL cell to TOGGLE that character's
+  dashboard window (show/hide). Click the OVL cell to open or
+  close that character's DPS overlay; right-click the OVL cell
   for the overlay menu (Reposition / View / Close).
 
   When a character is hidden (orange):
@@ -184,8 +184,8 @@ It does NOT touch the EVE client, network traffic or memory.
   EVE's own combat "messages" frame: just the DPS OUT (blue) and
   DPS IN (red) numbers over the game, with no window box.
 
-    Open / close    Left-click the DPS cell in the overview.
-    Menu            Right-click the DPS cell:
+    Open / close    Left-click the OVL cell in the overview.
+    Menu            Right-click the OVL cell:
                       Reposition   — re-enter move mode
                       View ▸  Numbers / Graph / Numbers+graph
                       Close overlay
@@ -197,7 +197,7 @@ It does NOT touch the EVE client, network traffic or memory.
   then click ✕ to SET it. Once set, the box disappears — only the
   text remains and the overlay becomes CLICK-THROUGH, so your
   mouse passes straight to EVE. To move it again, right-click the
-  DPS cell and choose Reposition.
+  OVL cell and choose Reposition.
 
   Position, size, view and placed/move state are remembered per
   character. Transparency and click-through are Windows-only, and
@@ -241,7 +241,7 @@ It does NOT touch the EVE client, network traffic or memory.
                 The mission NAME is never shown — see §11.
 
   The separate total-DPS overlay remains available from the
-  overview's DPS cell. See "THE DPS OVERLAY" in §5.
+  overview's OVL cell. See "THE DPS OVERLAY" in §5.
 
   The existing ISK, mission, anomaly and alert sections offer:
     ON/OFF      Toggle the section on or off
@@ -740,3 +740,7 @@ It does NOT touch the EVE client, network traffic or memory.
 
   Fly safe. o7
 ================================================================
+
+FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
+Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
+OVL controls the separate overlay. Start each pilot with Play first.

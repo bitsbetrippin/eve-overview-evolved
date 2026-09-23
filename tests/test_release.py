@@ -68,7 +68,7 @@ class StartupTests(unittest.TestCase):
         try:
             with patch.object(startup, "ROOT", folder), contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(startup.main(), 1)
-            self.assertIn("Missing ratting.py", (folder / "startup.log").read_text())
+            self.assertIn("Missing app_info.py", (folder / "startup.log").read_text())
         finally:
             os.chdir(before)
 
@@ -94,6 +94,7 @@ class StartupTests(unittest.TestCase):
             try:
                 ui.root.update()
                 self.assertTrue(ui.root.winfo_exists())
+                self.assertEqual(ui.root.title(), ratting.APP_TITLE)
                 self.assertIsNotNone(ui._tree)
                 self.assertEqual(ui.cfg["log_path"], str(logs))
                 self.assertEqual(ui.cfg["tax"], 7.5)

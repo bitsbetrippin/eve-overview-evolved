@@ -1,6 +1,6 @@
-EVE-OVERLAY-EVOLVED v0.7.1
+EVE-OVERLAY-EVOLVED v0.7.2
 
-1. Extract All from Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip.
+1. Extract All from Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip.
 2. Open the extracted folder.
 3. Double-click START.bat.
 4. If only the fleet overview appears, click SHOW PANELS.
@@ -38,3 +38,7 @@ Project: https://github.com/bitsbetrippin/eve-overview-evolved
 Upstream: https://github.com/psychojf/Eve-Ratting
 
 Read README.md for layout, architecture and build instructions.
+
+FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
+Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
+OVL controls the separate overlay. Start each pilot with Play first.

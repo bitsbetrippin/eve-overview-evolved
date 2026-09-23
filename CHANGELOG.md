@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.2 — 2026-09-23
+
+- Add a live per-character TARGET DPS column to the fleet overview (15-second window).
+- Preserve separate overlay controls under OVL and saved column widths.
+- Show explicit inactive/stale states; widen old overview layouts on upgrade.
+- Default background monitoring on for new settings, preserving explicit preferences.
+- Add real Tk regression coverage for hidden log reading, status and overlay clicks.
+
 ## v0.7.1 — 2026-09-22
 
 - Include incoming Nosferatu in the renamed INCOMING CAP DRAIN panel.
