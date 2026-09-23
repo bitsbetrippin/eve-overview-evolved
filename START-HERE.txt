@@ -1,0 +1,38 @@
+EVE RATTING - PORTABLE WINDOWS RELEASE
+
+1. Extract the entire ZIP using Extract All.
+2. Open the extracted Eve-Ratting-Combat-Meters-Windows-x64 folder.
+3. Double-click START.bat.
+
+Everything needed to launch is included. No Python installation,
+pip commands, admin access, or PATH changes are required.
+For Windows 10/11, Intel/AMD 64-bit PCs.
+
+Keep all files and the runtime folder together. Extract to a writable
+folder, such as Downloads or Desktop. The console remains open while
+Eve Ratting runs. Close the app with its X button when finished.
+
+EVE logs are detected automatically, including OneDrive Documents.
+For a custom log folder, choose it in Settings. Characters appear
+when EVE has written logs. Market price lookups use the internet.
+
+To keep old settings/history, close the old version and copy
+ratting_config.json and ratting_history.json (if present) beside
+START.bat. Existing custom log paths are preserved.
+
+If launch fails, the error stays visible; see startup.log if created.
+Runtime diagnosis from Command Prompt: START.bat --self-test
+
+NEW COMBAT PANELS
+Press Play on your character dashboard to start tracking.
+Aqua: DPS to the latest target hit in the combat log.
+Bright red: top three incoming attackers, ranked by recent damage.
+Both use a rolling 15-second window and update every 250 ms by default.
+Hover an attacker for its full name and damage total.
+Stop freezes the readings; Reset clears them.
+
+The meter follows logged hits, not target-selection changes alone.
+Identical logged names are grouped. Pause pauses log reading while
+recent damage ages out. The existing DPS overlay remains available.
+
+Fork/rebuild instructions are in README.md.

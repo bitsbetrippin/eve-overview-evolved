@@ -1,0 +1,11 @@
+runtime/
+build/
+dist/
+__pycache__/
+*.pyc
+startup.log
+ratting_config.json
+ratting_history.json
+ratting_prices.json
+ratting_nameids.json
+ratting_debug.log

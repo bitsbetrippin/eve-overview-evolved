@@ -1,0 +1,21 @@
+Eve Ratting upstream source:
+https://github.com/psychojf/Eve-Ratting
+Base commit: 9e3cd612af5d1f7d078c746ac2703c6c19c4b9f1
+Original authorship and notices are preserved in the source.
+
+Bundled CPython 3.13.15, Windows x64, Python Software Foundation:
+https://www.python.org/downloads/release/python-31315/
+https://www.python.org/ftp/python/3.13.15/python-3.13.15-amd64.zip
+SHA-256: 6479223746cdfb79d25865110d6f524ac98de081324e119af1dc3ae36bddc7a5
+Official hash manifest:
+https://www.python.org/ftp/python/3.13.15/windows-3.13.15.json
+Python and bundled component license terms: runtime/LICENSE.txt
+Tcl/Tk notices and licenses remain in runtime/tcl.
+
+Additional packages are pinned in requirements-windows.lock.
+Their metadata and license files remain under runtime/Lib/site-packages:
+Pillow 12.3.0: https://pypi.org/project/Pillow/12.3.0/
+pyperclip 1.11.0: https://pypi.org/project/pyperclip/1.11.0/
+pystray 0.19.5: https://pypi.org/project/pystray/0.19.5/
+watchdog 6.0.0: https://pypi.org/project/watchdog/6.0.0/
+six 1.17.0: https://pypi.org/project/six/1.17.0/
