@@ -1,4 +1,10 @@
-Eve Ratting upstream source:
+Eve-Overlay-Evolved v0.6
+Contributions: @bitsbetrippin
+https://github.com/bitsbetrippin/eve-overview-evolved
+See ATTRIBUTION.md for project credits.
+
+Original concept and base implementation: Eve-Ratting by @psychojf.
+Upstream source:
 https://github.com/psychojf/Eve-Ratting
 Base commit: 9e3cd612af5d1f7d078c746ac2703c6c19c4b9f1
 Original authorship and notices are preserved in the source.

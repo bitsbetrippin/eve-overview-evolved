@@ -1,5 +1,5 @@
 ================================================================
- EVE RATTING — HOW TO USE
+ EVE-OVERLAY-EVOLVED v0.6.1 — HOW TO USE
 ================================================================
 
 A passive desktop dashboard for EVE Online PvE pilots. It reads
@@ -38,15 +38,15 @@ It does NOT touch the EVE client, network traffic or memory.
   In the EVE client, open ESC → Settings and confirm that
   "Log combat interactions to file" is enabled.
 
-  Eve Ratting does NOT read your chat logs. Everything it
+  Eve-Overlay-Evolved does NOT read your chat logs. Everything it
   needs is in the gamelog.
 
 ----------------------------------------------------------------
- 3. RUNNING EVE RATTING
+ 3. RUNNING EVE-OVERLAY-EVOLVED v0.6.1
 ----------------------------------------------------------------
 
   PORTABLE RELEASE:
-    Download Eve-Ratting-Combat-Meters-Windows-x64.zip.
+    Download Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip.
     Right-click it, choose Extract All, then open the extracted
     folder and double-click START.bat. Keep all files together.
 
@@ -62,6 +62,13 @@ It does NOT touch the EVE client, network traffic or memory.
     including OneDrive and redirected folders. Saved custom log
     paths are preserved; change them in Settings if needed.
 
+  MISSING CHARACTER DASHBOARDS:
+    Click SHOW PANELS beside ACTIVE RATTING FLEET. This reveals,
+    expands and repositions active dashboards and detached sections
+    beside the overview without clearing your session counters.
+    New dashboards open beside the overview. Saved off-screen
+    positions are recovered against your current monitor layout.
+
   SOURCE DOWNLOAD / FORK:
     GitHub's Code > Download ZIP does not include the runtime.
     Use the portable release ZIP, or install Python with Tkinter
@@ -74,7 +81,7 @@ It does NOT touch the EVE client, network traffic or memory.
     - auto-detect your EVE log directories
     - scan for all characters with recent log files
     - show a CHARACTER SELECTION popup (see §4)
-    - open the RATTING OVERVIEW window
+    - open the FLEET OVERVIEW window
 
   On subsequent launches, window positions and all settings are
   restored automatically.
@@ -113,10 +120,10 @@ It does NOT touch the EVE client, network traffic or memory.
   Fleet Manager (◈ button in the Overview header).
 
 ----------------------------------------------------------------
- 5. THE RATTING OVERVIEW (FLEET WINDOW)
+ 5. THE FLEET OVERVIEW (FLEET WINDOW)
 ----------------------------------------------------------------
 
-  The RATTING OVERVIEW is the main hub. It lists every active
+  The FLEET OVERVIEW is the main hub. It lists every active
   character and shows their live metrics as a table:
 
     CHARACTER   Pilot name, prefixed with ★
@@ -213,6 +220,8 @@ It does NOT touch the EVE client, network traffic or memory.
   Each character gets its own always-on-top window. Sections
   from top to bottom:
 
+  TARGET DPS    Bold aqua DPS for the latest target hit (15s)
+  TOP INCOMING  Bold red top-three incoming attackers (15s)
   CONTROLS      Play / Pause / Stop / Reset / Next Site / Clip
   ALERTS        EWAR / escalation / loot feed (with CLR button)
   ISK TRACKER   ISK/hour + session timer + breakdown
@@ -220,11 +229,10 @@ It does NOT touch the EVE client, network traffic or memory.
                 progress (or ANOMALY TRACKER — see §12).
                 The mission NAME is never shown — see §11.
 
-  (Live DPS is no longer a dashboard section — it now lives in
-  the standalone DPS overlay, opened from the overview's DPS
-  cell. See "THE DPS OVERLAY" in §5.)
+  The separate total-DPS overlay remains available from the
+  overview's DPS cell. See "THE DPS OVERLAY" in §5.
 
-  Each section header has:
+  The existing ISK, mission, anomaly and alert sections offer:
     ON/OFF      Toggle the section on or off
     ▼ / ▶      Collapse or expand the section content
     ↱           Detach the section into its own floating window
@@ -244,8 +252,9 @@ It does NOT touch the EVE client, network traffic or memory.
                 On Play, the last 15 minutes of the log are
                 back-filled so you don't miss recent bounties.
 
-  ⏸  PAUSE      Freeze the timer without losing any data.
-                Parsing continues so no events are missed.
+  ⏸  PAUSE      Pause the timer and gamelog reading.
+                Recent damage ages out of the 15-second meters.
+                Events while paused are skipped on resume.
 
   ■  STOP       Freeze the display and halt parsing.
                 It does NOT write to history. The session is
@@ -253,7 +262,7 @@ It does NOT touch the EVE client, network traffic or memory.
 
   RESET         Save the session to history, then wipe it and
                 start fresh (timer back to 00:00, all counters
-                back to zero).
+                back to zero). Press Play to track again.
 
   NEXT SITE     Identical to RESET. Same code, different label.
                 READ §12 BEFORE USING IT — it ends your session,
@@ -304,7 +313,7 @@ It does NOT touch the EVE client, network traffic or memory.
   While a session is running or paused:
     1. In EVE, open your cargo / loot container.
     2. Select All (Ctrl+A) → Copy (Ctrl+C).
-    3. Eve Ratting detects the clipboard automatically.
+    3. Eve-Overlay-Evolved detects the clipboard automatically.
 
   The LOOT label shows a spinner while pricing is in progress.
   On completion it flashes green and adds an entry to the ALERTS
@@ -471,7 +480,7 @@ It does NOT touch the EVE client, network traffic or memory.
 
     Where       The CONTROLS bar of every character window
                 (next to RESET / NEXT SITE), and the ▤ / ⊘
-                glyph in the RATTING OVERVIEW header.
+                glyph in the FLEET OVERVIEW header.
 
     State       Green CLIP  / green ▤  = clipboard is live
                 Red CLIP ⊘  / red  ⊘   = locked, nothing read
@@ -648,27 +657,26 @@ It does NOT touch the EVE client, network traffic or memory.
        is data that was already buffered before the suspend.
 
   Crash on startup
-    -> Run from a terminal (python ratting.py) to see the
-       traceback, then open a GitHub issue with it.
+    -> Read the START.bat console and startup.log if created.
+       Diagnose the bundled runtime with START.bat --self-test.
 
 ----------------------------------------------------------------
  20. DEBUG LOG (WHEN SOMETHING FAILS SILENTLY)
 ----------------------------------------------------------------
 
-  Eve Ratting deliberately swallows errors instead of crashing:
+  Eve-Overlay-Evolved deliberately swallows errors instead of crashing:
   a panel that fails to redraw must never take the whole overlay
   down while you are in a site. The downside is that problems
   are invisible, so there is a switch to record them.
 
   Turn it on either way:
 
-    - Set the environment variable EVE_RATTING_DEBUG=1
-        Windows : set EVE_RATTING_DEBUG=1
-        Linux   : export EVE_RATTING_DEBUG=1
+    - Set the environment variable EVE_OVERLAY_EVOLVED_DEBUG=1
+        Windows : set EVE_OVERLAY_EVOLVED_DEBUG=1
+        Linux   : export EVE_OVERLAY_EVOLVED_DEBUG=1
 
     - Or add  "debug_log": true  to ratting_config.json
-      (easier with the packaged .exe, where setting an
-       environment variable is awkward)
+      The legacy EVE_RATTING_DEBUG variable also works.
 
   Failures are then appended to ratting_debug.log next to
   ratting.py, each with a timestamp, the function it came from,
@@ -699,9 +707,9 @@ It does NOT touch the EVE client, network traffic or memory.
  22. UNINSTALL
 ----------------------------------------------------------------
 
-  Eve Ratting installs nothing system-wide. To remove it:
+  Eve-Overlay-Evolved installs nothing system-wide. To remove it:
     1. Delete the project folder.
-    2. (Optional) pip uninstall pystray Pillow pyperclip watchdog
+    No pip uninstall is needed for the portable release.
 
   All settings, history, caches and the debug log live next to
   ratting.py and are removed with the folder. Nothing is written
@@ -712,7 +720,12 @@ It does NOT touch the EVE client, network traffic or memory.
 ----------------------------------------------------------------
 
   Issues and feature requests:
-    https://github.com/psychojf/Eve-Ratting/issues
+    https://github.com/bitsbetrippin/eve-overview-evolved/issues
+
+  Contributions: @bitsbetrippin
+  Original concept/base: Eve-Ratting by @psychojf
+  https://github.com/psychojf/Eve-Ratting
+  See ATTRIBUTION.md for credits.
 
   Fly safe. o7
 ================================================================

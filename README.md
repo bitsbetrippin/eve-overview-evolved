@@ -1,250 +1,273 @@
-# Eve Ratting
+# Eve-Overlay-Evolved v0.6.1
 
-A lightweight desktop dashboard for **EVE Online** PvE pilots. Eve Ratting watches your client's gamelog files in real time and turns them into a clean, themed overlay showing DPS, ISK/hour, bounties, taxes, loot value, missions, anomalies and EWAR alerts — without ever touching the game client.
+A desktop combat and income overlay for EVE Online. Track target DPS,
+who is dealing the most damage to you, bounties, loot and session progress
+across multiple characters.
 
-The app uses Python and Tkinter. The portable Windows release includes its own Python runtime and dependencies. A **fleet overview window** acts as the hub and automatically spawns a separate dashboard for every character whose gamelog it finds, making it usable across multiple accounts simultaneously.
+**Contributions:** [@bitsbetrippin](https://github.com/bitsbetrippin) — portable
+launch workflow, combat-meter enhancements, feature direction, testing and
+release development for Eve-Overlay-Evolved.
 
-## Screenshots
+**Original concept and base implementation:**
+[Eve-Ratting](https://github.com/psychojf/Eve-Ratting), by
+[@psychojf](https://github.com/psychojf). This project builds on that work;
+original authorship and bundled component notices are retained.
+See [ATTRIBUTION.md](ATTRIBUTION.md).
 
-| | |
-|---|---|
-| ![Character dashboard](9.png) | ![Clipboard lock](10.png) |
-| A character dashboard: controls, alerts, ISK breakdown and the anomaly tracker | The clipboard lock, armed and disarmed |
+**Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
+The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
+**Release tag:** `v0.6.1`.
 
-## Features
+## Download, extract, launch
 
-- **Target DPS meter** — bold aqua panel at the top of each pilot dashboard,
-  showing damage per second to the latest target hit in the combat log
-- **Top incoming damage** — bold bright red panel immediately below it,
-  listing the top three named attackers by damage over the last 15 seconds
-
-- **Fleet overview** — one hub window lists every detected character in a compact table (TOTAL NET, ISK/HR, session time, and a per-character DPS-overlay toggle); columns are centered and can be dragged to resize, with widths and window geometry remembered; new characters appear automatically every 10 seconds
-- **Per-character dashboards** — each pilot gets its own always-on-top, draggable window that auto-sizes to its content
-- **Live combat tracking** — outgoing/incoming DPS over a sliding 15-second window, total damage dealt and received, hits and misses, peak DPS
-- **ISK metrics** — gross bounties, configurable tax rate, loot estimation, net ISK and ISK/hour with a collapsible breakdown panel
-- **Bounty backfill** — on Play, the last 15 minutes of the log are replayed so recent bounties are never missed
-- **Mission tracker** — objective completion, completed-mission count and storyline progress (EVE offers one every 16 missions, and the client tells you nothing about where you are in that cycle). Note that the *name* of the current mission is not shown: EVE writes it to no log file, so no log reader can know it
-- **Anomaly tracker** — automatically segments ratting into discrete sites by combat gap, tracks per-site time and ISK, computes averages and best site, and reports the **run loot** and an all-in **ISK per site** for multi-site MTU runs; configurable gap threshold
-- **EWAR alerts** — instant warnings for warp scramble and stasis web attempts, escalation and dreadnought spawn notifications, with a visual flash and an audible beep. These are the events that stop you *leaving*, so they are the only ones that make a sound
-- **Loot clipboard** — paste an EVE cargo/loot window (Ctrl+A, Ctrl+C) while running; prices are looked up via ESI (Jita sell for faction/deadspace items, universe average for everything else, with an offline fallback table)
-- **Clipboard lock (CLIP)** — stop the app reading the clipboard at all, so you can copy a fitting or paste your cargo into an external appraisal site without it being counted as loot
-- **Undo last loot import (UNDO)** — pop the last valued cargo back off the session total, repeatedly, when something got counted that should not have been
-- **Standings tracker** — captures faction standing changes from the gamelog
-- **Session history** — persistent JSON history with lifetime totals; browsable per-character in a scrollable popup (the file keeps the most recent 1 000 sessions)
-- **Detached panels** — pop any section (ISK, Missions, Anomalies, Alerts) out into its own always-on-top resizable window; positions remembered between sessions
-- **DPS overlay** — a standalone, transparent DPS overlay per character that floats over your ship like EVE's own combat "messages" frame: just the **DPS OUT** (blue) and **DPS IN** (red) numbers — and an optional live graph — over the game, with no window box. **Left-click** the **DPS** cell in the Fleet Overview to open/close it; **right-click** that cell for a menu (**Reposition** · **View ▸ Numbers / Graph / Numbers+graph** · **Close**). A fresh overlay opens in *move mode* (white outline + ✕ + resize grip); drag it over your ship, then click **✕** to *set* it — once placed the box disappears, leaving only the text, and it becomes **click-through** so your mouse passes straight to EVE. Independent of the global opacity slider; position, size, view and placed/move state are remembered per character. *Transparency and click-through are Windows-only, and a topmost overlay draws over EVE only in Fixed-Window or Borderless mode, not exclusive fullscreen.*
-- **Collapsible sections** — each panel can be collapsed to its header bar to save screen space; the whole window can be collapsed to just its title bar with a double-click
-- **22+ themes** — EVE Online default plus faction palettes (Caldari, Minmatar, Amarr, Gallente, Guristas, Blood Raiders, Angel Cartel, Serpentis, Sansha's Nation, Triglavian, EDENCOM, Intaki Syndicate, ORE, Mordu's Legion, Thukker Tribe, CONCORD, Society of Conscious Thought and more); applied live with no flicker, saved per character
-- **Configurable opacity** — set window transparency from 20 % to 100 % (default 85 %)
-- **System tray** — minimize to tray (optional, requires `pystray` + `Pillow`)
-- **Portable Windows release** — extract the release ZIP and double-click `START.bat`; Python, Tkinter and all app dependencies are included
-
-## How it works
-
-Eve Ratting is a passive log reader. It tails the files EVE Online writes to:
-
-```
-%USERPROFILE%\Documents\EVE\logs\Gamelogs
-```
-
-It parses combat lines, bounty payouts, mission events, EWAR attempts and standings updates with regular expressions, then aggregates them into per-character dashboards. **No memory reading, no packet sniffing, no API keys, no client modification** — it only reads files the game itself writes to disk. This keeps it fully compliant with the EVE Online EULA.
-
-Each character is discovered from the gamelog filename, which ends in that pilot's character ID — that is the only stable identifier, since display names can change. A new gamelog is opened by the client on every session, so the app follows the rotation automatically and keeps counting when you relog or undock.
-
-## Requirements
-
-- **Windows 10/11** or **Linux** (native client, Steam, or Proton — log paths are auto-detected)
-- **Python 3.9+** (uses `datetime.timezone`, f-strings, `deque`, etc.) — *only for running a source checkout; the portable Windows ZIP includes Python*
-- **Tkinter** (bundled with the standard Python.org installer)
-- **EVE Online** client with gamelogs enabled (on by default)
-
-Optional Python packages (the app runs without them, with reduced functionality):
-
-| Package | Purpose |
-|---|---|
-| `pystray` | System tray icon |
-| `Pillow` | Required by `pystray` for the tray image |
-| `pyperclip` | Clipboard paste support for loot estimation |
-| `watchdog` | Event-driven log watching (falls back to timer polling if absent) |
-
-Audio EWAR alerts (a short beep on warp-scramble / stasis-web) use `winsound`, which is part of the Python standard library on Windows — no install needed.
-
-## Quick start
-
-### Windows: download, extract, launch
-
-1. Download **Eve-Ratting-Combat-Meters-Windows-x64.zip** from your release.
+1. Download **Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
+4. Select your characters, then press **Play** on a character dashboard.
 
-The launcher opens `ratting.py` with the included Python 3.13 runtime,
-Tkinter, and packages. No Python installation, pip commands, administrator
-access, setup download, or PATH changes are needed. The ZIP is for **Windows
-10/11 on Intel/AMD 64-bit PCs**. Keep the extracted files together.
+The Windows 10/11 x64 package includes Python 3.13.15, Tcl/Tk and all app
+packages. No Python installation, administrator access, pip command, PATH
+editing or first-run setup download is needed. Keep the extracted files
+and `runtime/` folder together. The console stays open while the app runs.
+Quit all windows using the **X on the fleet overview**; a character
+window's X hides that dashboard.
 
-The console stays open while the dashboard is running. Close the dashboard
-with its X button when finished. If startup fails, the error remains visible
-and Python startup errors are written to `startup.log`.
+GitHub's **Code > Download ZIP** contains source without the runtime.
+Use the versioned Windows release ZIP for the ready-to-run experience.
+Market-price lookups use an internet connection while the app is running.
 
-EVE log detection follows Windows' current Documents folder, including
-OneDrive or a redirected Documents folder. An existing saved `log_path` is
-preserved. If EVE uses a custom location, select it in the app's Settings.
-The dashboard can open before EVE is running; characters appear when logs
-are available. Internet access is used for live market prices, not setup.
+## What's new in v0.6.1
 
-Your settings and history are saved alongside `ratting.py`. To carry settings
-from an older release, close it and copy `ratting_config.json` and
-`ratting_history.json`, if present, into this extracted folder before launch.
+- New character dashboards open in a cascade beside the fleet overview.
+- Saved positions are checked against current monitor work areas, including
+  monitors left of the primary screen. Unreachable panels move back into view.
+- **SHOW PANELS** in the fleet overview reveals, expands and repositions
+  active character dashboards and their existing detached sections.
+- Clicking a character whose dashboard is off-screen recovers it. Session
+  counters and Play/Pause/Stop state are preserved during recovery.
+- Added regression coverage for a complete fleet with multiple pilots,
+  saved positions, hidden/collapsed dashboards and detached sections.
 
-### Working on your fork
+The release retains v0.6 branding and attribution, portable startup,
+Documents/OneDrive log detection, aqua target DPS and red incoming-damage
+rankings. See [CHANGELOG.md](CHANGELOG.md) and [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-The portable ZIP includes editable application source: changes to `ratting.py`
-are used the next time you run `START.bat`.
+## Interface layout
 
-For a Git checkout, clone your fork and run:
+The **fleet overview** is the main hub: one row per character with total
+net ISK, ISK/hour, session time and the detached DPS-overlay toggle. Its
+header provides Settings, Fleet Manager, clipboard lock and Quit. Hover
+the application title for contributor and upstream credits. **SHOW PANELS**
+beside ACTIVE RATTING FLEET brings dashboards back next to the overview.
+Click a character row to show/hide that pilot's dashboard; the DPS column
+controls the separate aggregate DPS overlay.
+
+![Fleet overview in v0.6.1](overview-v0.6.1.png)
+
+Each **character dashboard** is arranged from top to bottom:
+
+| Section | Purpose |
+| --- | --- |
+| Character title bar | Pilot name; drag to move or double-click to collapse |
+| **TARGET DPS — bold aqua** | DPS and name of the latest target hit |
+| **TOP INCOMING DAMAGE — bold bright red** | Three attackers ranked by recent damage, with their DPS |
+| Controls | Play, Pause, Stop, Reset, Next Site and clipboard lock |
+| Alerts | Combat/EWAR notifications and session events |
+| ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
+| Missions or anomalies | Mission progress or site timing, counts and averages |
+
+![Character dashboard with sample combat data](dashboard-v0.6.1.png)
+
+*Preview uses synthetic combat data. The two combat panels stay aqua/red
+across themes. Other panels follow the selected theme.*
+
+ISK, Missions, Anomalies and Alerts can detach into separate windows.
+The independent DPS overlay remains available from the overview's DPS cell:
+left-click to toggle; right-click for position and view options. It shows
+total outgoing/incoming DPS, a graph, or both. Windows transparency and
+click-through behavior are intended for borderless/fixed-window play.
+
+## Combat meters and controls
+
+Both panels use a **rolling 15-second window** and refresh at the configured
+UI interval, **250 ms by default**. DPS is damage inside that window divided
+by 15; it ramps up as hits arrive and falls to zero as they expire.
+
+- **Target DPS** follows the latest name you hit in the combat log.
+  Selecting a target alone cannot update the meter. If drones and weapons
+  hit different targets, the latest hit determines the displayed target.
+- **Incoming damage** aggregates damage by attacker name, sorts highest
+  first, and shows three attackers. Hover for the full name and damage
+  total. Rankings reflect recent totals, not largest volley or lifetime damage.
+- Identically named NPCs share totals because parsed damage lines do not
+  provide unique NPC IDs. Long names retain full hover details. Parsing
+  supports plain/HTML-tagged English damage lines, corporation tags,
+  ship suffixes, punctuation and HTML entities.
+
+The original aggregate DPS counters and detached overlay remain separate
+from the per-target display.
+
+| Control | Current behavior |
+| --- | --- |
+| Play | Starts/resumes tracking; a new log session backfills recent bounties |
+| Pause | Pauses the timer and log reading; recent damage ages out of the meters |
+| Stop | Stops reading and freezes displayed values, including combat panels |
+| Reset / Next Site | Saves the session when applicable, clears counters and meters, and leaves tracking stopped; press Play again |
+| CLIP | Locks/unlocks clipboard reading across the fleet |
+| UNDO | Removes the last imported loot value from that character's session |
+
+**Site gap** (45 seconds by default) groups combat into anomalies without
+resetting the session. **Next Site** performs a full reset. For an
+MTU/salvage run, keep one session running to count all sites and the final
+loot haul together.
+
+## Architecture
+
+The UI, parsing and existing session logic remain centered in `ratting.py`.
+Small modules isolate release identity, startup, log-path discovery and
+named combat metrics and monitor-aware placement.
+
+```mermaid
+flowchart TD
+    A[START.bat] --> B[Bundled Python: isolated mode]
+    B --> C[startup.py: paths, Tcl/Tk, error reporting]
+    C --> D[ratting.py: MainUI and CharacterWindow]
+    E[EVE Gamelogs] --> F[Log reader: watchdog and polling]
+    F --> G[Damage parsing and session events]
+    G --> H[Data: aggregate DPS, income, history]
+    G --> I[CombatMeter: named damage over 15 seconds]
+    H --> D
+    I --> D
+    J[eve_paths.py: Documents and fallbacks] --> F
+    K[app_info.py: name, version, attribution] --> C
+    K --> D
+    L[Public ESI prices and loot clipboard] --> H
+    D --> M[Local JSON settings and history]
+    N[window_placement.py: monitor work areas and recovery] --> D
+```
+
+| File / component | Responsibility |
+| --- | --- |
+| `START.bat` | Locates its folder and invokes bundled Python with `-I -B` |
+| `startup.py` | Sets app/Tcl/Tk paths, starts `ratting.py`, provides `--self-test` and error logs |
+| `app_info.py` | Product name, version, release tag, repository URL and credits |
+| `ratting.py` | Tkinter windows, log tailing/rotation, session state, themes, alerts and price workers |
+| `combat_meter.py` | Damage-line normalization, bounded named rolling totals, expiry and incoming ranking |
+| `eve_paths.py` | Redirected Documents, OneDrive, standard Documents and Linux/Proton path candidates |
+| `window_placement.py` | Monitor work areas, reachable title checks and dashboard recovery |
+| `build_release.py` | Verifies/stages Python, installs pinned wheels, tests and builds the versioned ZIP |
+| `requirements-windows.lock` | Exact Windows x64 wheels and SHA-256 hashes |
+| `tests/test_release.py` | Startup, log paths, settings preservation and main-window checks |
+| `tests/test_combat.py` | Parsing, attribution, rolling totals, log-to-widget updates and character panels |
+| `tests/test_panels.py` | Multiple-pilot startup, row clicks, hidden/collapsed recovery and monitor geometry |
+
+The UI uses Tk's event loop. File notifications and timer polling drive
+incremental log reading; market lookups run in background threads. Named
+damage buckets use monotonic arrival time and a bounded event queue. Stop
+snapshots remain frozen while live damage expires. JSON settings/history
+use temporary-file replacement when written.
+
+The app reads gamelogs produced by EVE. It does not read game-process
+memory, modify the client or automate game inputs. Public ESI requests
+supply market prices; clipboard access supports loot valuation unless
+locked with CLIP.
+
+## Paths, settings and upgrades
+
+Windows discovery starts with the current user's actual Documents folder,
+including OneDrive/redirection, then checks known fallbacks. A typical
+location is `Documents/EVE/logs/Gamelogs`. Saved custom `log_path` settings
+are preserved; change the path in Settings if needed. Characters appear
+after EVE has written gamelogs.
+
+All app state is stored beside `ratting.py`:
+
+| File | Contents |
+| --- | --- |
+| `ratting_config.json` | Log path, pilot preferences, themes and window positions |
+| `ratting_history.json` | Saved sessions |
+| `ratting_prices.json` / `ratting_nameids.json` | Disposable price and item-ID caches |
+| `startup.log` | Most recent caught Python startup/application failure |
+| `ratting_debug.log` | Optional internal diagnostics |
+
+The `ratting_*` filenames and `ratting.py` entry point remain for
+compatibility with earlier Eve-Ratting-based releases.
+
+To upgrade, close the old app, extract v0.6.1 into a new folder, and copy
+`ratting_config.json` and `ratting_history.json` into it before launching.
+The caches may also be copied. Do not overwrite the new runtime/source
+with files from the old release.
+
+## Source development and release builds
+
+For source development, install Python 3.9+ with Tkinter, clone this
+repository, then run:
 
 ```bat
 python -m pip install -r requirements.txt
 python ratting.py
 ```
 
-This source-only route requires Python 3.9+ with Tkinter. Keep `eve_paths.py` and `combat_meter.py`
-beside `ratting.py`. GitHub's **Code > Download ZIP** is source-only; use the
-portable release ZIP for the no-install launch experience.
+Keep the helper modules beside `ratting.py`. Optional packages provide
+clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
+file notifications (`watchdog`). All are included in the Windows release.
+Source retains Linux/Proton path fallbacks; v0.6.1 packaging and GUI
+verification target Windows x64.
 
-To build your own portable release on Windows with an installed Python:
+Build on Windows:
 
 ```bat
 python build_release.py
 ```
 
-The builder downloads a checksum-verified official Python runtime, installs
-exact dependency wheels from `requirements-windows.lock`, runs runtime and
-GUI checks, and writes the portable ZIP and SHA-256 checksum under `dist/`.
-Builds need internet access. End users do not need it for setup.
-The runtime, build output and personal settings are excluded from Git.
+The builder verifies the official CPython 3.13.15 x64 runtime, installs
+hash-pinned wheels, runs a runtime self-test and all three regression suites,
+then writes:
 
-For a full walkthrough see [HOW_TO.txt](HOW_TO.txt).
-
-## Combat meters
-
-Press **Play** on a character dashboard to begin tracking that character.
-The aqua **TARGET DPS** panel and red **TOP INCOMING DAMAGE** panel refresh
-at the configured update interval (250 ms by default), using a rolling
-15-second window. DPS is damage inside that window divided by 15, so it
-ramps up as hits arrive and falls to zero when they age out.
-
-The target is the **latest name you hit**, as written in the combat log.
-Changing your selected target without landing a hit cannot update this
-log-based meter. When drones or weapons hit different targets, the most
-recent hit determines the name shown; damage is counted only for that name.
-Identically named NPCs are grouped because the parsed damage lines contain
-names rather than unique entity IDs.
-
-The red panel ranks the top three incoming sources by their total damage
-inside the same window and shows their DPS. Hover a row for the full name
-and damage total. Names are shortened on screen when needed to fit.
-**Stop** freezes both panels, **Reset** clears them, and **Pause** pauses
-log reading while the recent-damage window ages out. Aqua and red remain
-fixed when changing themes. Existing detached DPS overlays still work.
-
-## Controls
-
-| Button | Action |
-|---|---|
-| ▶ Play | Start the session timer; back-fills the last 15 min of bounties |
-| ⏸ Pause | Freeze the timer; parsing continues in the background |
-| ■ Stop | Freeze the display and halt. **Does not save** — the session is written to history on Reset, Next Site, or Quit |
-| RESET | Save the session to history, then wipe everything and start fresh |
-| NEXT SITE | Identical to RESET (see below) |
-| CLIP | Lock/unlock clipboard reading — global, mirrored in every window |
-| UNDO | Remove the last loot import from this character's session |
-
-## SITE GAP vs NEXT SITE
-
-Both have "site" in the name and they do **completely different things**. This trips up most new users, so it is worth being precise.
-
-### SITE GAP — automatic, harmless
-
-A **setting** (Settings ▸ SITE GAP, default 45 seconds).
-
-The anomaly tracker watches for silence in the combat log. Once `SITE GAP` seconds pass with no combat, it decides the current site is finished; the next combat line starts a new one. That is the whole mechanism — EVE never announces that you entered or left an anomaly, so silence is the only available signal.
-
-What it touches: **only the anomaly tracker's own counters** — CLEARED, AVG TIME, AVG ISK, BEST ISK.
-
-What it does *not* touch: your session keeps running. The timer, bounties, loot, kills and ISK/hour all continue untouched, and nothing is written to history.
-
-Tune it if sites are being split or merged wrongly — raise it if one site becomes two, lower it if two sites become one.
-
-### NEXT SITE — manual, and it ends your session
-
-A **button**, and it is far heavier than the name suggests.
-
-**NEXT SITE is functionally identical to RESET.** It is the same code path, just labelled for a different mental model. Pressing it will:
-
-1. Close the current anomaly
-2. **Save the whole session to history** — one history row
-3. **Wipe everything**: timer back to 00:00, bounties to 0, loot to 0, kills to 0, and the anomaly stats (CLEARED, AVG TIME, AVG ISK, BEST ISK) all back to zero
-
-So it does not "advance to the next site" inside a running session. It ends the session and begins a new one.
-
-### Which should I use?
-
-| You want | Do this |
-|---|---|
-| Per-site averages that build up across a whole evening | Leave SITE GAP alone to split sites. **Never press NEXT SITE.** |
-| One history row per site | Press NEXT SITE after each site |
-| **MTU / salvage runs** | **Do not press NEXT SITE until you have salvaged and copied the loot** — see below |
-
-### The MTU trap
-
-The common haven workflow — clear a site, drop an MTU, warp to the next, repeat, then come back with a salvager and collect everything in one pass — has one rule: **leave the session running for the whole run.**
-
-The salvage arrives as a *single* cargo covering every site. Whichever session is running when you paste it gets the entire amount. Press NEXT SITE between havens and you get four history rows, three of them showing zero loot and the fourth showing all of it.
-
-Leave the session alone and SITE GAP still counts your four sites correctly. The anomaly tracker then shows:
-
-- **RUN LOOT** — the whole salvage haul for the run
-- **ISK / SITE (+LOOT)** — session net including that loot, divided across the sites run
-
-Note that **AVG ISK stays bounty-only** on purpose. One MTU cargo covering four sites genuinely cannot be attributed per-site — that information does not exist anywhere — so the loot is reported at run level and the division is presented as an average rather than invented per site. The two figures side by side are the point: bounty-only versus all-in.
-
-## Files the app creates
-
-All written next to `ratting.py` (or the `.exe`):
-
-| File | Purpose |
-|---|---|
-| `ratting_config.json` | User settings (paths, tax, opacity, theme per character, etc.) |
-| `ratting_history.json` | Past session records |
-| `ratting_prices.json` | ESI market price cache (refreshed every 24 h) |
-| `ratting_nameids.json` | EVE item name → type ID cache for loot lookups |
-| `ratting_debug.log` | Only when debug logging is enabled (see below) |
-
-None of these contain credentials or personal data beyond your in-game character name. The two cache files are disposable — delete them and they rebuild themselves.
-
-## Troubleshooting
-
-The app deliberately swallows errors rather than dying mid-session: a panel that fails to redraw should never take the whole overlay down with it. That makes problems silent, so there is a switch to see them.
-
-Enable debug logging either way:
-
-```bash
-# environment variable
-set EVE_RATTING_DEBUG=1        # Windows
-export EVE_RATTING_DEBUG=1     # Linux
+```text
+dist/Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip.sha256
 ```
 
-or add `"debug_log": true` to `ratting_config.json` — easier with the packaged `.exe`.
+For an offline rebuild, supply a cached runtime archive and the exact wheels:
 
-Failures are then appended to `ratting_debug.log` with a timestamp, the function they came from, and a full traceback. The file is capped at 512 KB and restarts from empty past that, so it cannot fill your disk. Leave it off for normal play; it costs a single boolean check when disabled.
+```bat
+python build_release.py --cache PATH-TO-RUNTIME-CACHE --wheel-dir PATH-TO-WHEELS
+```
 
-**Building the `.exe` yourself:** `watchdog` must be installed in the build environment, and `ratting.spec` lists its platform backends under `hiddenimports`. PyInstaller does not follow watchdog's platform-guarded imports on its own — without them the executable silently falls back to timer polling instead of event-driven log watching.
+For direct regression testing, copy `runtime/` from a portable release
+beside the source, then run:
 
-## Contributing
+```bat
+runtime\python.exe -I -B tests\test_release.py
+runtime\python.exe -I -B tests\test_combat.py
+runtime\python.exe -I -B tests\test_panels.py
+```
 
-Pull requests, bug reports and theme submissions are welcome. Open an issue or PR on GitHub.
+Runtime/build folders and user state are excluded from Git. Release source
+belongs to the `v0.6.1` tag; the portable ZIP is the downloadable release
+asset, distinct from GitHub's source-only ZIP.
 
-## Disclaimer
+## Troubleshooting and verification
 
-Eve Ratting only reads local log files written by the EVE Online client. It does not interact with the game client memory, network traffic, or the official EVE API beyond fetching public market prices from ESI. Use at your own risk.
+- Missing runtime/script: extract the complete versioned Windows ZIP.
+- No pilots: confirm the log path and that EVE has written gamelogs.
+- Only the fleet overview appears: click **SHOW PANELS**. It brings active
+  dashboards and existing detached sections beside the overview, expands
+  collapsed dashboards and saves their new positions without resetting data.
+- A pilot is absent from the fleet: enable it in Fleet Manager first.
+- Meters show zero: press Play and allow new combat hits to arrive.
+- Startup failure: read the console and `startup.log`, if created.
+- Runtime check: `START.bat --self-test` reports product/version, Python,
+  Tk, package versions and log path without reading logs or the clipboard.
+- Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
+  `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
+
+Validation covers 32 automated checks and clean-extraction startup without
+system Python on PATH, including conflicting Python/Tk settings. GUI
+previews and combat tests use synthetic data. Live EVE sessions and online
+market-price services are not integration-tested.
+
+See [HOW_TO.txt](HOW_TO.txt) and [CONTRIBUTING.md](CONTRIBUTING.md) for more.
+Report bugs in [this project's issue tracker](https://github.com/bitsbetrippin/eve-overview-evolved/issues).
+Bundled notices are in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).

@@ -1,104 +1,57 @@
-# Contributing to Eve Ratting
+# Contributing to Eve-Overlay-Evolved
 
-Thanks for taking the time to contribute! Eve Ratting is a small,
-community-driven tool for EVE Online PvE pilots. Bug reports, feature
-suggestions, theme submissions and pull requests are all welcome.
+Contributions and reports belong in
+[bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
+Follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and retain the original
+and Evolved credits in [ATTRIBUTION.md](ATTRIBUTION.md).
 
-By participating in this project you agree to abide by the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+## Development
 
-## Ground rules
+Use Python 3.9+ with Tkinter to run source. Install optional features with
+`python -m pip install -r requirements.txt`, then `python ratting.py`.
+The portable Windows release bundles all these packages.
 
-- **Stay within the EVE Online EULA.** This project only reads files the
-  client writes to disk. Contributions must not introduce client memory
-  reading, packet inspection, automation/botting, or anything else that
-  violates CCP's Terms of Service.
-- **Keep it single-file friendly.** Eve Ratting is intentionally one Python
-  script with no build step. New features should fit that model unless there
-  is a strong reason to split things.
-- **No telemetry, no network calls without consent.** Any new outbound HTTP
-  request must be opt-in and clearly documented.
+- Keep UI/session changes in `ratting.py`, named combat metrics in
+  `combat_meter.py`, path discovery in `eve_paths.py`, and release identity
+  in `app_info.py`. Monitor placement belongs in `window_placement.py`.
+- Keep Tk operations on the UI thread and slow lookups off it.
+- Preserve legacy JSON filenames and saved custom paths.
+- Treat log lines and clipboard contents as data, never executable input.
+- Keep the app a passive log reader; do not add game-input automation or
+  client memory access. Document new network or clipboard behavior.
+- Preserve aqua/red combat-panel colors when adding themes.
 
-## Reporting bugs
+## Verification
 
-Open a GitHub issue and include:
+The release builder runs all three test suites against a fresh runtime:
 
-1. **What happened** vs. **what you expected to happen**
-2. **Steps to reproduce** — ideally with a small snippet of the gamelog or
-   chatlog line that triggered the problem (redact your character name if you
-   prefer)
-3. **Your environment** — OS version, Python version (`python --version`),
-   installed optional packages
-4. **A traceback** if the app crashed (Eve Ratting prints to stdout when run
-   from a terminal)
+```bat
+python build_release.py
+```
 
-Please **do not** post full unredacted log files; one or two relevant lines
-are usually enough.
+For direct tests, copy the runtime folder from a portable release beside
+the source and use:
 
-## Suggesting features
+```bat
+runtime\python.exe -I -B tests\test_release.py
+runtime\python.exe -I -B tests\test_combat.py
+runtime\python.exe -I -B tests\test_panels.py
+```
 
-Open an issue describing:
+Use synthetic logs and isolated settings in tests. Do not commit personal
+logs, JSON state, runtime binaries, build folders or caches. For changes
+that affect layout, inspect a rendered pilot window as well as test results.
 
-- The use case ("As a Sansha incursion runner I want…")
-- Why the existing UI/metrics don't already cover it
-- A rough idea of where it would live in the dashboard
+## Pull requests and reports
 
-Small, focused features are more likely to be merged than sweeping
-restructures.
+Keep changes focused. Explain the problem, resulting behavior and checks
+performed. Include the application version, Windows/Python version,
+reproduction steps and a short redacted example when reporting a bug.
+Do not upload a complete private gamelog or clipboard dump.
 
-## Submitting a pull request
+Release metadata lives in `app_info.py`. Monitor placement belongs in `window_placement.py`. Update the startup banner,
+README, changelog and release notes alongside it, then rebuild the ZIP.
+Tag the tested source commit and attach the versioned Windows ZIP to the
+release. GitHub's automatic source ZIP does not include the runtime.
 
-1. **Fork** the repo and create a topic branch:
-   ```bash
-   git checkout -b fix/dps-window-trim
-   ```
-2. **Make your change.** Match the existing style — French inline comments
-   on helper methods, hex colors at the top of the file, regex patterns
-   grouped by purpose.
-3. **Smoke-test the app** by running `python ratting.py` and exercising the
-   panels affected by your change.
-4. **Keep diffs small.** One concern per PR. Reformatting unrelated code
-   makes review hard.
-5. **Write a clear PR description** explaining *why*, not just *what*.
-6. **Open the PR** against `main`.
-
-## Code style
-
-- Python 3.9+ syntax
-- 4-space indentation, no tabs
-- Prefer standard-library only; new third-party dependencies must be
-  optional and gracefully degrade if missing (see how `pystray`, `Pillow`
-  and `pyperclip` are imported at the top of `ratting.py`)
-- Keep regex patterns documented with a short comment explaining what they
-  match
-- Don't introduce blocking calls on the Tk main thread — use `threading` or
-  `root.after(...)` like the rest of the code
-
-## Adding a theme
-
-Themes live in the `THEMES` dict near the top of `ratting.py`. To add one:
-
-1. Pick a base color and an accent color (hex).
-2. Add an entry like:
-   ```python
-   "My Faction": _gen_theme("#101418", "#5b8fa8"),
-   ```
-3. Run the app, open Settings → Theme, and verify it looks right against
-   every panel (combat, mission, anomaly, history).
-4. Submit a PR with a screenshot.
-
-## Adding a parser pattern
-
-If a new gamelog or chatlog line should be recognized:
-
-1. Add a `RE_*` constant in the regex section, with a one-line French
-   comment describing what it matches.
-2. Wire it into the appropriate parser method on `App` (combat, bounty,
-   mission, EWAR, …).
-3. Add a sample log line (or a link to one) in the PR description so a
-   reviewer can sanity-check it.
-
-## License of contributions
-
-By submitting a pull request you agree that your contribution will be
-released under the same terms as the rest of the project.
+Report security problems through the channels in [SECURITY.md](SECURITY.md).

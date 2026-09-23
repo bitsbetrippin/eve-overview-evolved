@@ -1,6 +1,8 @@
 ﻿# -*- coding: utf-8 -*-
 # =============================================================================
-# EVE RATTING — tableau de bord PvE pour EVE Online
+# EVE-OVERLAY-EVOLVED — PvE overlay for EVE Online
+# Original concept and base: Eve-Ratting by psychojf.
+# Evolved release contributions: bitsbetrippin; see ATTRIBUTION.md.
 # =============================================================================
 # L'app ne lit QUE les fichiers que le client écrit lui-même sur le disque
 # (dossier Gamelogs). Pas de lecture mémoire, pas de capture réseau, pas de clé
@@ -21,6 +23,8 @@ import os, re, json, time, threading, urllib.request, traceback
 from datetime import datetime, timedelta, timezone
 from collections import deque
 from combat_meter import CombatMeter, parse_damage
+from window_placement import move_near, recover_if_offscreen, title_visible, rectangle, work_areas
+from app_info import APP_NAME, APP_TITLE, VERSION, REPOSITORY_URL, CREDITS
 
 # Sous pythonw.exe (mode fenêtre, sans console) sys.stdout vaut None : sans ce
 # test, l'exécutable livré planterait dès la première ligne. L'UTF-8 est imposé
@@ -299,7 +303,8 @@ NAMEID_CACHE = os.path.join(_BASE, "ratting_nameids.json")
 # true dans ratting_config.json.
 DEBUG_LOG_FILE = os.path.join(_BASE, "ratting_debug.log")
 DEBUG_LOG_MAX  = 512 * 1024          # octets — au-delà, le fichier repart à zéro
-_DEBUG_ON  = os.environ.get("EVE_RATTING_DEBUG", "") not in ("", "0")
+_DEBUG_ON  = os.environ.get("EVE_OVERLAY_EVOLVED_DEBUG",
+                            os.environ.get("EVE_RATTING_DEBUG", "")) not in ("", "0")
 _LOG_LOCK  = threading.Lock()
 
 def _log_exc(context=""):
@@ -331,7 +336,7 @@ def _log_exc(context=""):
 
 # CCP demande un User-Agent descriptif sur l'ESI : les requêtes anonymes se font
 # limiter puis bloquer, ce qui casserait silencieusement l'estimation du loot.
-_ESI_UA = "Eve-Ratting/1.0 (+https://github.com/psychojf/Eve-Ratting)"
+_ESI_UA = f"{APP_NAME}/{VERSION} (+{REPOSITORY_URL})"
 
 # Chaque CharacterWindow lance son propre thread de prix au démarrage. Sans ce
 # verrou, cinq personnages = cinq téléchargements ESI simultanés du même
@@ -1847,6 +1852,7 @@ class CharacterWindow:
 
     def __init__(self, root_tk, main_ui, char_id: str, char_name: str, log_file: str, cfg: dict):
         top = tk.Toplevel(root_tk)
+        top.title(f"{char_name} | {APP_TITLE}")
         # Masquée jusqu'à ce que MainUI décide de l'afficher : sans ça, la
         # fenêtre apparaît brièvement à sa position par défaut avant d'être
         # replacée, ce qui produit un sursaut visible au démarrage.
@@ -2055,6 +2061,16 @@ class CharacterWindow:
         if self.char_cfg.get("alert_detached", False):
             self._detach("alert")
         self._start_minimized = self.char_cfg.get("main_minimized", False)
+        # Withdrawn Toplevels can report stale winfo coordinates. Validate again
+        # when the window is actually mapped, including saved collapsed panels.
+        self.root.bind("<Map>", self._recover_position, add="+")
+
+    def _recover_position(self, event):
+        if event.widget is self.root:
+            anchor = self._main_ui.root if self._main_ui else self.root.master
+            index = list(self._main_ui._windows).index(self.char_id) if self._main_ui and self.char_id in self._main_ui._windows else 0
+            if recover_if_offscreen(self.root, anchor, index):
+                self._save_pos()
 
     # ── Cache disque nom → type_id ─────────────────────────────────────
     # Résoudre un nom d'objet en type_id coûte un appel ESI. Le cache rend ces
@@ -2597,18 +2613,17 @@ class CharacterWindow:
         # position ne doit pas bouger quand seule la hauteur change.
             new_geom = re.sub(r"^\d+x\d+", f"{saved_w}x{h}", saved)
             self.root.geometry(new_geom)
+            anchor = self._main_ui.root if self._main_ui else self.root.master
+            recover_if_offscreen(self.root, anchor)
         else:
             self.root.geometry(f"{WIN_W}x{h}")
             self._center()
 
-    # Position par défaut au bord DROIT, pas au centre : l'UI d'EVE occupe le
-    # centre de l'écran, et une fenêtre qui s'ouvrirait dessus masquerait le
-    # jeu à chaque premier lancement.
+    # Open beside the overview rather than the far edge of a virtual desktop.
     def _center(self):
-        self.root.update_idletasks()
-        x = self.root.winfo_screenwidth()  - WIN_W - 20
-        y = (self.root.winfo_screenheight() - self.root.winfo_height()) // 2
-        self.root.geometry(f"+{x}+{y}")
+        anchor = self._main_ui.root if self._main_ui else self.root.master
+        index = len(self._main_ui._windows) if self._main_ui else 0
+        move_near(self.root, anchor, index)
 
     # Glisser réimplémenté à la main : la fenêtre est en overrideredirect, donc
     # elle n'a pas de barre de titre système pour la déplacer.
@@ -5545,6 +5560,7 @@ class MainUI:
 
     def __init__(self):
         self.root = tk.Tk()
+        self.root.title(APP_TITLE)
         self.root.withdraw()
         self.root.overrideredirect(True)
         self.root.configure(bg=BG)
@@ -5807,9 +5823,10 @@ class MainUI:
         hdr.bind("<Double-Button-1>", self._toggle_collapse)
 
         tk.Frame(hdr, bg=T0, width=3).pack(side="left", fill="y")
-        title_lbl = tk.Label(hdr, text="  ◆ RATTING OVERVIEW",
+        title_lbl = tk.Label(hdr, text=f"  ◆ {APP_TITLE}",
                              font=F11B, bg=BG_H, fg=T0)
         title_lbl.pack(side="left")
+        Tooltip(title_lbl, f"{APP_TITLE}\n{CREDITS}")
         title_lbl.bind("<Double-Button-1>", self._toggle_collapse)
 
         xb = tk.Label(hdr, text="✕", font=F11B,
@@ -5881,6 +5898,12 @@ class MainUI:
         hdr2.pack(fill="x", pady=(0, 3))
         tk.Label(hdr2, text="ACTIVE RATTING FLEET",
                  font=F8B, bg=BG, fg=T0).pack(side="left")
+        self._show_panels_button = tk.Button(
+            hdr2, text="SHOW PANELS", command=self._show_all_panels,
+            font=F8B, bg=BG_H, fg=CI, activebackground=BG_P,
+            activeforeground=CI, relief="flat", padx=6, pady=1, cursor="hand2")
+        self._show_panels_button.pack(side="right")
+        Tooltip(self._show_panels_button, "Show and bring all active character panels beside this overview.")
 
         tk.Frame(body, bg=BD, height=1).pack(fill="x", pady=(0, 2))
 
@@ -6409,7 +6432,7 @@ class MainUI:
 
         bg_monitor = self.cfg.get("bg_monitor", False)
 
-        if win.root.winfo_viewable():
+        if win.root.winfo_viewable() and title_visible(rectangle(win.root), work_areas(self.root)):
             # MASQUER : on retire la fenêtre principale et tous les panneaux détachés, en
             # gardant les widgets VIVANTS — _tick continue de les mettre à jour, donc
             # réafficher est instantané et rien n'est perdu.
@@ -6441,6 +6464,8 @@ class MainUI:
             # AFFICHER : on restaure la fenêtre et uniquement les panneaux qui étaient
             # visibles avant le masquage, pas tous.
             win.root.deiconify()
+            if recover_if_offscreen(win.root, self.root):
+                win._save_pos()
             win.root.lift()
             panels = [("isk", "_isk_window"),
                       ("msn", "_msn_window"), ("anom", "_anom_window"),
@@ -6451,6 +6476,8 @@ class MainUI:
                     if dw and dw.w.winfo_exists():
                         try:
                             dw.w.deiconify()
+                            if recover_if_offscreen(dw.w, self.root):
+                                dw._save_geometry()
                             dw.w.lift()
                         except Exception:
                             _log_exc("MainUI._toggle_window:5246")
@@ -6461,6 +6488,33 @@ class MainUI:
                 self._tv_cache.pop((char_id, "__tag__"), None)
                 self._tv_tag(char_id, "standby", True)
         
+        save_config(self.cfg)
+
+    def _show_all_panels(self):
+        """Recover hidden, collapsed or misplaced panels without changing session data."""
+        for index, (char_id, win) in enumerate(self._windows.items()):
+            if not win.root.winfo_exists():
+                continue
+            if win._is_collapsed:
+                win._dragging = False
+                win._last_toggle_time = 0
+                win._toggle_window_collapse(None)
+            win.root.deiconify()
+            win._fit()
+            move_near(win.root, self.root, index)
+            win.root.lift()
+            win._suspended = False
+            win.char_cfg["show"] = True
+            win._save_pos()
+            for panel_index, attr in enumerate(("_isk_window", "_msn_window", "_anom_window", "_alert_window")):
+                panel = getattr(win, attr, None)
+                if panel and panel.w.winfo_exists():
+                    panel.w.deiconify()
+                    move_near(panel.w, self.root, index + panel_index + 1)
+                    panel.w.lift()
+                    panel._save_geometry()
+            win._hidden_detached = []
+        self._rebuild_rows()
         save_config(self.cfg)
 
     # ── Rappel de fermeture d'une fenêtre ────────────────────────────────
@@ -6574,6 +6628,7 @@ class MainUI:
             self.root.geometry(saved)
         else:
             self.root.geometry(f"{self.MAIN_W}x300+10+80")
+        recover_if_offscreen(self.root, self.root)
 
     # ── Zone de notification (une icône pour toute l'app) ────────────────
     # UNE icône pour l'app entière, pas une par personnage : cinq pilotes
@@ -6599,7 +6654,7 @@ class MainUI:
                 pystray.MenuItem("Show Overview", self._tray_show, default=True),
                 pystray.MenuItem("Exit", self._tray_exit),
             )
-            self._tray_icon = pystray.Icon("PVE", icon_img, "EVE Ratting", menu)
+            self._tray_icon = pystray.Icon(APP_NAME, icon_img, APP_TITLE, menu)
             threading.Thread(target=self._tray_icon.run, daemon=True).start()
         except Exception:
             traceback.print_exc()

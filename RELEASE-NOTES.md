@@ -1,47 +1,33 @@
-# Combat meters release — 2026-09-22
+# Eve-Overlay-Evolved v0.6.1
 
-- Added a bold aqua TARGET DPS panel above the controls on every character
-  dashboard, showing the latest target hit and its rolling 15-second DPS.
-- Added a bright red TOP INCOMING DAMAGE panel directly underneath,
-  ranking three named attackers by damage in the same rolling window.
-- Added full-name and damage-total hover details, safe fitting of long names,
-  and fixed aqua/red colors across themes.
-- Preserved Stop snapshots and Reset behavior for both new panels.
-- Parse plain and HTML-tagged damage lines, including corporation tags,
-  ship suffixes, punctuation and HTML entities in names.
-- Kept the portable START.bat launch and bundled runtime/dependencies.
+This patch addresses dashboards opening outside the visible monitor area
+or being difficult to recover from the fleet overview.
 
-Target selection itself is not visible to this log-based application.
-The displayed target is the latest name you hit. Identically named NPCs
-share totals. Incoming rankings reflect the last 15 seconds, not the
-largest single hit or lifetime damage. Press Play to start tracking.
+Download **Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip**, choose **Extract All**,
+and double-click **START.bat**. Python, Tcl/Tk and dependencies are included.
 
-Validation: 22 automated tests covering damage attribution, target switches,
-expiry, ranking, bounded memory, real log-to-widget updates, Stop/Reset,
-long-name layout, theme colors and the previous portable-startup checks.
-Visual review used synthetic combat data. Live EVE gameplay was not tested.
+- New dashboards open beside the overview in a cascade.
+- Saved off-screen positions recover using the current monitor work areas.
+- **SHOW PANELS** reveals, expands and moves active dashboards and their
+  existing detached sections beside the overview. Session counters and
+  Play/Pause/Stop state are retained; press Play to begin tracking.
+- A character-row click recovers an off-screen dashboard.
+- Reachable saved positions, including left-hand monitors, are preserved.
 
----
+The aqua target-DPS meter, red incoming-attacker ranking, v0.6 branding,
+and credits remain included. Contributions: **@bitsbetrippin**. Original
+concept and base implementation: **Eve-Ratting by @psychojf**.
 
-# Portable startup release
+To upgrade, close the old app, extract into a new folder, then copy
+`ratting_config.json` and `ratting_history.json` from the old folder before
+launching. Do not overwrite the new runtime or source with old files.
 
-- Added START.bat: locates the extracted folder and launches ratting.py
-  with a private, bundled Python runtime.
-- Bundled Python 3.13.15, Tcl/Tk and all app dependencies for Windows x64.
-  Startup requires no package installation or network access.
-- Isolated Python from system PATH, PYTHONHOME and PYTHONPATH settings.
-- Set Tcl/Tk paths relative to the app folder.
-- Detect Windows' actual Documents folder, including OneDrive redirection,
-  with standard Documents and Linux/Proton fallbacks.
-- Preserve existing saved custom EVE log paths and user configuration.
-- Keep launch errors visible and write Python startup errors to startup.log.
-- Include an offline runtime self-test and repeatable release builder with
-  checksum verification, pinned wheels and GUI regression checks.
+Validation: 32 startup, combat, monitor-placement and real Tk GUI checks;
+clean ZIP launches without system Python on PATH and with conflicting
+Python/Tk environment settings. Test logs are synthetic; live EVE gameplay
+and online market-price services have not been integration-tested.
 
-Based on upstream commit 9e3cd612af5d1f7d078c746ac2703c6c19c4b9f1.
-This is a local build for your fork, not an upstream-published release.
-
-Validated: runtime/dependency imports and Tk initialization; real dashboard
-construction and clean shutdown using empty test logs; path detection;
-configuration preservation; missing source error handling.
-Live gameplay tracking and market-price services are not integration-tested.
+Repository: https://github.com/bitsbetrippin/eve-overview-evolved
+Release tag: v0.6.1 (the existing v0.6 tag remains unchanged).
+Upstream: https://github.com/psychojf/Eve-Ratting
+See README.md for layout, architecture and troubleshooting.

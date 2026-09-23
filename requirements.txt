@@ -1,6 +1,6 @@
-# Optional dependencies — Eve Ratting runs without them, with reduced functionality.
+# Optional dependencies — Eve-Overlay-Evolved runs without them, with reduced functionality.
 # (winsound, used for audio EWAR alerts, is part of the Python stdlib on Windows.)
 pyperclip   # clipboard loot paste → ISK value estimation
 pystray     # minimize-to-tray icon
 Pillow      # tray icon image (required by pystray)
-watchdog    # event-driven gamelog/chatlog watching (else falls back to timer polling)
+watchdog    # event-driven gamelog watching (else falls back to timer polling)

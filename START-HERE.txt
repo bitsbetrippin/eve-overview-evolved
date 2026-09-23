@@ -1,38 +1,37 @@
-EVE RATTING - PORTABLE WINDOWS RELEASE
+EVE-OVERLAY-EVOLVED v0.6.1
 
-1. Extract the entire ZIP using Extract All.
-2. Open the extracted Eve-Ratting-Combat-Meters-Windows-x64 folder.
+1. Extract All from Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip.
+2. Open the extracted folder.
 3. Double-click START.bat.
+4. If only the fleet overview appears, click SHOW PANELS.
+5. Press Play on a character dashboard to track new combat hits.
 
-Everything needed to launch is included. No Python installation,
-pip commands, admin access, or PATH changes are required.
-For Windows 10/11, Intel/AMD 64-bit PCs.
+Python, Tkinter and dependencies are included. No Python installation,
+admin access, PATH changes or first-run package downloads are needed.
+For Windows 10/11 on Intel/AMD 64-bit PCs. Keep all files together.
 
-Keep all files and the runtime folder together. Extract to a writable
-folder, such as Downloads or Desktop. The console remains open while
-Eve Ratting runs. Close the app with its X button when finished.
-
-EVE logs are detected automatically, including OneDrive Documents.
-For a custom log folder, choose it in Settings. Characters appear
-when EVE has written logs. Market price lookups use the internet.
-
-To keep old settings/history, close the old version and copy
-ratting_config.json and ratting_history.json (if present) beside
-START.bat. Existing custom log paths are preserved.
-
-If launch fails, the error stays visible; see startup.log if created.
-Runtime diagnosis from Command Prompt: START.bat --self-test
-
-NEW COMBAT PANELS
-Press Play on your character dashboard to start tracking.
-Aqua: DPS to the latest target hit in the combat log.
-Bright red: top three incoming attackers, ranked by recent damage.
-Both use a rolling 15-second window and update every 250 ms by default.
+Aqua TARGET DPS: latest target hit in the combat log.
+Red TOP INCOMING DAMAGE: top three attackers over the last 15 seconds.
 Hover an attacker for its full name and damage total.
-Stop freezes the readings; Reset clears them.
+Stop freezes both panels; Reset clears them. Target selection without
+landing a hit cannot update the target shown by this log-based app.
 
-The meter follows logged hits, not target-selection changes alone.
-Identical logged names are grouped. Pause pauses log reading while
-recent damage ages out. The existing DPS overlay remains available.
+Settings detect Documents/OneDrive EVE log folders. Saved custom log
+paths are preserved and can be changed in Settings.
+Quit using the X on the fleet overview. A character's X hides that
+dashboard. The console remains open while the app runs.
 
-Fork/rebuild instructions are in README.md.
+UPGRADING
+Close the old app. Copy ratting_config.json and ratting_history.json,
+if present, from the old folder into this folder before launching.
+Do not overwrite new source files or the runtime with old versions.
+
+Startup errors remain visible. See startup.log if created.
+Diagnostic command: START.bat --self-test
+
+Contributions: @bitsbetrippin
+Original concept/base: Eve-Ratting by @psychojf
+Project: https://github.com/bitsbetrippin/eve-overview-evolved
+Upstream: https://github.com/psychojf/Eve-Ratting
+
+Read README.md for layout, architecture and build instructions.
