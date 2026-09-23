@@ -1,33 +1,32 @@
-# Eve-Overlay-Evolved v0.6.1
+# Eve-Overlay-Evolved v0.7.1
 
-This patch addresses dashboards opening outside the visible monitor area
-or being difficult to recover from the fleet overview.
+Download **Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip**, Extract All, then
+double-click **START.bat**. Python and dependencies are included.
+Click SHOW PANELS if needed and press Play to start tracking.
 
-Download **Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip**, choose **Extract All**,
-and double-click **START.bat**. Python, Tcl/Tk and dependencies are included.
+The amber **INCOMING CAP DRAIN** panel now includes **Nosferatu**:
 
-- New dashboards open beside the overview in a cascade.
-- Saved off-screen positions recover using the current monitor work areas.
-- **SHOW PANELS** reveals, expands and moves active dashboards and their
-  existing detached sections beside the overview. Session counters and
-  Play/Pause/Stop state are retained; press Play to begin tracking.
-- A character-row click recovers an off-screen dashboard.
-- Reachable saved positions, including left-hand monitors, are preserved.
+- Combined neutralizer + Nos session GJ and a 15-second GJ/sec rate.
+- Separate NEUT/NOS subtotals, plus a breakdown for each top source on hover.
+- Source rankings use combined session loss. Hover also shows the last module.
+- Negative incoming `GJ energy drained to` amounts are counted as positive
+  loss. Capacitor gains, wrong signs/directions and unknown colors are excluded.
+- Zero records add no loss. Distinct identical same-second records still count.
 
-The aqua target-DPS meter, red incoming-attacker ranking, v0.6 branding,
-and credits remain included. Contributions: **@bitsbetrippin**. Original
-concept and base implementation: **Eve-Ratting by @psychojf**.
+Stop freezes all values; Reset / Next Site clears them. Pause stops reading;
+resume skips paused entries, matching existing behavior. Old records are not
+backfilled. Original English raw-log color tags are required for direction.
+The meter tracks reported loss, not remaining capacitor or net cap balance.
 
-To upgrade, close the old app, extract into a new folder, then copy
-`ratting_config.json` and `ratting_history.json` from the old folder before
-launching. Do not overwrite the new runtime or source with old files.
+Session history preserves neut-only fields and adds Nos-only and combined
+fields. Old history records are unchanged. Close the old app, extract into a
+new folder, and copy ratting_config.json/ratting_history.json to upgrade.
 
-Validation: 32 startup, combat, monitor-placement and real Tk GUI checks;
-clean ZIP launches without system Python on PATH and with conflicting
-Python/Tk environment settings. Test logs are synthetic; live EVE gameplay
-and online market-price services have not been integration-tested.
+Validation: 60 automated checks, including the expanded anonymized sample
+with 2,307 GJ neut + 1,641 GJ Nos = 3,948 GJ, real Tk UI checks, and clean
+portable launches without system Python. Live EVE gameplay is not tested.
 
+Contributions: @bitsbetrippin. Original concept/base: Eve-Ratting by @psychojf.
 Repository: https://github.com/bitsbetrippin/eve-overview-evolved
-Release tag: v0.6.1 (the existing v0.6 tag remains unchanged).
-Upstream: https://github.com/psychojf/Eve-Ratting
-See README.md for layout, architecture and troubleshooting.
+Release tag: v0.7.1. Earlier tags remain unchanged.
+See README.md for architecture, layout, supported formats and controls.

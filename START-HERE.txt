@@ -1,6 +1,6 @@
-EVE-OVERLAY-EVOLVED v0.6.1
+EVE-OVERLAY-EVOLVED v0.7.1
 
-1. Extract All from Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip.
+1. Extract All from Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip.
 2. Open the extracted folder.
 3. Double-click START.bat.
 4. If only the fleet overview appears, click SHOW PANELS.
@@ -12,8 +12,11 @@ For Windows 10/11 on Intel/AMD 64-bit PCs. Keep all files together.
 
 Aqua TARGET DPS: latest target hit in the combat log.
 Red TOP INCOMING DAMAGE: top three attackers over the last 15 seconds.
-Hover an attacker for its full name and damage total.
-Stop freezes both panels; Reset clears them. Target selection without
+Amber INCOMING CAP DRAIN: combined neutralizer + Nosferatu GJ this session,
+15-second GJ/sec, separate NEUT/NOS totals and top sources by combined GJ.
+Hover for each source's split and last module.
+Hover a damage attacker for its full name and damage total.
+Stop freezes all meters; Reset clears them. Target selection without
 landing a hit cannot update the target shown by this log-based app.
 
 Settings detect Documents/OneDrive EVE log folders. Saved custom log

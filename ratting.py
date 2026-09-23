@@ -23,6 +23,7 @@ import os, re, json, time, threading, urllib.request, traceback
 from datetime import datetime, timedelta, timezone
 from collections import deque
 from combat_meter import CombatMeter, parse_damage
+from neut_meter import CapDrainMeter, parse_incoming_cap_drain, source_label, format_gj
 from window_placement import move_near, recover_if_offscreen, title_visible, rectangle, work_areas
 from app_info import APP_NAME, APP_TITLE, VERSION, REPOSITORY_URL, CREDITS
 
@@ -764,7 +765,7 @@ def save_session(data, char_name, tax_pct):
     # Rien gagné, rien tiré, rien looté : la session n'apprend rien au joueur et
     # ne ferait que polluer l'historique. Le cas est fréquent — ouvrir l'app,
     # regarder, refermer.
-    if data.bg <= 0 and data.dd <= 0 and data.loot_val <= 0:
+    if data.bg <= 0 and data.dd <= 0 and data.loot_val <= 0 and data.cap_drain.total <= 0:
         return
     # Instantané APLATI plutôt qu'une référence à l'objet Data : la session est
     # remise à zéro juste après, et l'historique doit rester lisible tel quel
@@ -781,6 +782,15 @@ def save_session(data, char_name, tax_pct):
         "kills":      data.bc,
         "dmg_dealt":  data.dd,
         "dmg_recv":   data.dr,
+        "neut_received_gj": data.cap_drain.by_kind["neut"],
+        "neut_hits": data.cap_drain.hits_by_kind["neut"],
+        "neut_sources_gj": dict(data.cap_drain.totals_by_kind["neut"]),
+        "nos_received_gj": data.cap_drain.by_kind["nos"],
+        "nos_hits": data.cap_drain.hits_by_kind["nos"],
+        "nos_sources_gj": dict(data.cap_drain.totals_by_kind["nos"]),
+        "cap_drain_received_gj": data.cap_drain.total,
+        "cap_drain_hits": data.cap_drain.hits,
+        "cap_drain_sources_gj": dict(data.cap_drain.totals),
         "hits":       data.hd,
         "misses":     data.md,
         "peak_dps_d": int(data.pkd),
@@ -941,6 +951,7 @@ class Data:
         self.ed_sum = 0
         self.er_sum = 0
         self.combat = CombatMeter(window=DPS_W)
+        self.cap_drain = CapDrainMeter(window=DPS_W)
 
         # Historique pour le graphique, échantillonné à chaque tick.
         # La taille est calculée pour couvrir exactement DPS_GRAPH_W secondes à
@@ -2825,34 +2836,38 @@ class CharacterWindow:
         self._incoming_container.grid(row=1, column=0, sticky="ew", padx=4, pady=(2, 5))
         self._build_combat_meters()
 
+        self._neut_container = tk.Frame(self._body, bg=BG_P)
+        self._neut_container.grid(row=2, column=0, sticky="ew", padx=4, pady=(0, 5))
+        self._build_neut_meter()
+
         self._ctrl_frame = tk.Frame(self._body, bg=BG)
-        self._ctrl_frame.grid(row=2, column=0, sticky="ew")
+        self._ctrl_frame.grid(row=3, column=0, sticky="ew")
         self._build_controls(self._ctrl_frame)
 
         # Alerts section (right under controls)
         self._alert_container = tk.Frame(self._body, bg=BG)
-        self._alert_container.grid(row=3, column=0, sticky="ew")
+        self._alert_container.grid(row=4, column=0, sticky="ew")
         self._build_alerts(self._alert_container)
 
         self._sep_alert_isk = tk.Frame(self._body, bg=BD, height=1)
-        self._sep_alert_isk.grid(row=4, column=0, sticky="ew", padx=4)
+        self._sep_alert_isk.grid(row=5, column=0, sticky="ew", padx=4)
 
         self._isk_container = tk.Frame(self._body, bg=BG)
-        self._isk_container.grid(row=5, column=0, sticky="ew")
+        self._isk_container.grid(row=6, column=0, sticky="ew")
         self._build_isk(self._isk_container, detached=False)
 
         self._sep_isk_msn = tk.Frame(self._body, bg=BD, height=1)
-        self._sep_isk_msn.grid(row=6, column=0, sticky="ew", padx=4)
+        self._sep_isk_msn.grid(row=7, column=0, sticky="ew", padx=4)
 
         self._msn_container = tk.Frame(self._body, bg=BG)
-        self._msn_container.grid(row=7, column=0, sticky="ew")
+        self._msn_container.grid(row=8, column=0, sticky="ew")
         self._build_missions(self._msn_container)
 
         self._sep_msn_anom = tk.Frame(self._body, bg=BD, height=1)
-        self._sep_msn_anom.grid(row=8, column=0, sticky="ew", padx=4)
+        self._sep_msn_anom.grid(row=9, column=0, sticky="ew", padx=4)
 
         self._anom_container = tk.Frame(self._body, bg=BG)
-        self._anom_container.grid(row=9, column=0, sticky="ew")
+        self._anom_container.grid(row=10, column=0, sticky="ew")
         self._build_anomalies(self._anom_container)
 
         # ── Barre d'état (bas) : bande fine avec une poignée décorative ──
@@ -2924,6 +2939,78 @@ class CharacterWindow:
         name, amount, dps = attackers[index]
         return f"{name}\n{amount:,.0f} damage in 15 seconds / {dps:,.1f} DPS\nIdentical logged names are grouped."
 
+    def _build_neut_meter(self):
+        panel, amber = self._neut_container, "#FFB347"
+        self._neut_display = self.data.cap_drain.snapshot()
+        self._neut_font = tkfont.Font(family="Consolas", size=9, weight="bold")
+
+        def label(parent, text, **kwargs):
+            widget = tk.Label(parent, text=text, bg=BG_P, fg=amber,
+                              font=self._neut_font, **kwargs)
+            self._combat_fixed_colors.append((widget, amber))
+            return widget
+
+        label(panel, "INCOMING CAP DRAIN", anchor="w").pack(fill="x", padx=7, pady=(5, 0))
+        values = tk.Frame(panel, bg=BG_P)
+        values.pack(fill="x", padx=7)
+        self._neut_rate_label = label(values, "0.0 GJ/s", anchor="w")
+        self._neut_rate_label.pack(side="left")
+        self._neut_total_label = label(values, "SESSION 0 GJ", anchor="e")
+        self._neut_total_label.pack(side="right")
+        self._cap_breakdown_label = label(panel, "NEUT 0 GJ  |  NOS 0 GJ", anchor="w")
+        self._cap_breakdown_label.pack(fill="x", padx=7)
+        DynamicTooltip(self._cap_breakdown_label, lambda: (
+            f"Neutralizers: {format_gj(self._neut_display['neut_gj'])} GJ\n"
+            f"Nosferatu: {format_gj(self._neut_display['nos_gj'])} GJ\n"
+            "Both contribute to session total, recent GJ/s and source rankings."))
+        tk.Label(panel, text="15s rate / sources by session GJ", font=("Consolas", 8),
+                 bg=BG_P, fg=T1, anchor="w").pack(fill="x", padx=7)
+        Tooltip(self._neut_total_label, "Incoming neutralizer and Nosferatu loss, as reported by the log.\nReset / Next Site clears the total.\nExcludes capacitor gained, local module use and regeneration.")
+        Tooltip(self._neut_rate_label, "Incoming neutralizer plus Nosferatu loss during the last 15 seconds / 15.\nStop freezes the display; Pause lets recent events expire.")
+        self._neut_rows = []
+        for index in range(3):
+            row = tk.Frame(panel, bg=BG_P)
+            row.pack(fill="x", padx=7, pady=(0, 4 if index == 2 else 0))
+            value = label(row, "", anchor="e")
+            value.pack(side="right")
+            name = label(row, "No incoming cap drain" if index == 0 else "", width=1, anchor="w")
+            name.pack(side="left", fill="x", expand=True, padx=(0, 5))
+            self._neut_rows.append((name, value))
+            for widget in (name, value):
+                DynamicTooltip(widget, lambda i=index: self._neut_tooltip(i))
+
+    def _neut_tooltip(self, index):
+        sources = self._neut_display["sources"]
+        if index >= len(sources):
+            return "No incoming capacitor drain recorded this session"
+        row = sources[index]
+        return (f"{row['source']}\n{format_gj(row['total_gj'])} GJ this session"
+                f" / {row['gj_per_second']:,.1f} GJ/s over 15s"
+                f"\nNEUT {format_gj(row['neut_gj'])} GJ / NOS {format_gj(row['nos_gj'])} GJ"
+                f"\nLast module: {row['module']}")
+
+    def _update_neut_meter(self):
+        frozen = self._frozen.get("cap_drain") if self._st == "stopped" and self._frozen else None
+        self._neut_display = frozen if frozen is not None else self.data.cap_drain.snapshot()
+        snapshot = self._neut_display
+        self._cset(self._neut_rate_label, text=f"{snapshot['gj_per_second']:,.1f} GJ/s")
+        self._cset(self._neut_total_label, text=f"SESSION {format_gj(snapshot['total_gj'])} GJ")
+        width = self._neut_container.winfo_width()
+        width = (width if width > 1 else WIN_W - 16) - 14
+        breakdown = f"NEUT {format_gj(snapshot['neut_gj'])} GJ  |  NOS {format_gj(snapshot['nos_gj'])} GJ"
+        self._cset(self._cap_breakdown_label,
+                   text=self._meter_ellipsis(breakdown, self._neut_font, width - 4))
+        for index, (name_label, value_label) in enumerate(self._neut_rows):
+            if index < len(snapshot["sources"]):
+                row = snapshot["sources"][index]
+                value = f"{format_gj(row['total_gj'])} GJ"
+                available = max(25, width - self._neut_font.measure(value) - 13)
+                name = self._meter_ellipsis(f"{index + 1}. {source_label(row['source'])}", self._neut_font, available)
+            else:
+                name, value = ("No incoming cap drain" if index == 0 else ""), ""
+            self._cset(name_label, text=name)
+            self._cset(value_label, text=value)
+
     @staticmethod
     def _meter_ellipsis(text, font, width):
         if font.measure(text) <= width:
@@ -2933,6 +3020,7 @@ class CharacterWindow:
         return text + "…"
 
     def _update_combat_meters(self):
+        self._update_neut_meter()
         snapshot = (self._frozen.get("combat") if self._st == "stopped" and self._frozen else None)
         self._combat_display = snapshot if snapshot is not None else self.data.combat.snapshot()
         snapshot = self._combat_display
@@ -4125,7 +4213,7 @@ class CharacterWindow:
         d = self.data
 
         # Always save session on close if there's any data worth saving
-        if not self._session_saved and (d.bg > 0 or d.dd > 0 or d.loot_val > 0):
+        if not self._session_saved and (d.bg > 0 or d.dd > 0 or d.loot_val > 0 or d.cap_drain.total > 0):
 
             # Le segment en cours est versé dans le temps accumulé : sans ça, arrêter une
             # session en perdrait la dernière portion.
@@ -4202,6 +4290,12 @@ class CharacterWindow:
                 d.add_dmg_out(ts, amount, name)
             else:
                 d.add_dmg_in(ts, amount, name)
+            self._anom_combat_event(ts)
+            return
+
+        neut = parse_incoming_cap_drain(raw) if "(combat)" in raw else None
+        if neut is not None:
+            d.cap_drain.add(neut)
             self._anom_combat_event(ts)
             return
 
@@ -4410,6 +4504,7 @@ class CharacterWindow:
 
         self._frozen = {
             "combat":   d.combat.snapshot(),
+            "cap_drain":    d.cap_drain.snapshot(),
             "timer":    fdur(d.secs()) if (d.acc_sec > 0) else "00:00",
             "isk_text": f"{fisk(d.isk())} ISK" if d.secs() >= 60 and d.bg > 0 else "\u2014 STOPPED \u2014",
             "isk_fg":   CI if (d.secs() >= 60 and d.bg > 0) else TD,

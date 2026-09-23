@@ -1,7 +1,7 @@
-# Eve-Overlay-Evolved v0.6.1
+# Eve-Overlay-Evolved v0.7.1
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
-who is dealing the most damage to you, bounties, loot and session progress
+who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
 across multiple characters.
 
 **Contributions:** [@bitsbetrippin](https://github.com/bitsbetrippin) — portable
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.6.1`.
+**Release tag:** `v0.7.1`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,21 +36,23 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.6.1
+## What's new in v0.7.1
 
-- New character dashboards open in a cascade beside the fleet overview.
-- Saved positions are checked against current monitor work areas, including
-  monitors left of the primary screen. Unreachable panels move back into view.
-- **SHOW PANELS** in the fleet overview reveals, expands and repositions
-  active character dashboards and their existing detached sections.
-- Clicking a character whose dashboard is off-screen recovers it. Session
-  counters and Play/Pause/Stop state are preserved during recovery.
-- Added regression coverage for a complete fleet with multiple pilots,
-  saved positions, hidden/collapsed dashboards and detached sections.
+- The amber panel is now **INCOMING CAP DRAIN** and includes neutralizers
+  and incoming **Nosferatu** in its session total, 15-second GJ/sec rate
+  and source rankings.
+- Separate **NEUT** and **NOS** subtotals appear below the combined values;
+  each source's hover details also show the split and last module.
+- Negative `GJ energy drained to` entries count as positive capacitor loss.
+  Capacitor gained via `drained from`, wrong signs and unknown colors are excluded.
+- Separate Nos and combined drain fields are saved alongside existing neut
+  history fields. Old neut history keeps its original meaning.
+- An expanded anonymized fixture validates 130 records: **2,307 GJ neut +
+  1,641 GJ Nos = 3,948 GJ**. Separate same-second activations are retained.
 
-The release retains v0.6 branding and attribution, portable startup,
-Documents/OneDrive log detection, aqua target DPS and red incoming-damage
-rankings. See [CHANGELOG.md](CHANGELOG.md) and [RELEASE-NOTES.md](RELEASE-NOTES.md).
+The release retains portable START.bat startup, dashboard recovery,
+aqua target DPS, red incoming damage and contributor/upstream attribution.
+See [CHANGELOG.md](CHANGELOG.md) and [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 ## Interface layout
 
@@ -62,7 +64,7 @@ beside ACTIVE RATTING FLEET brings dashboards back next to the overview.
 Click a character row to show/hide that pilot's dashboard; the DPS column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.6.1](overview-v0.6.1.png)
+![Fleet overview in v0.7.1](overview-v0.7.1.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
@@ -71,14 +73,15 @@ Each **character dashboard** is arranged from top to bottom:
 | Character title bar | Pilot name; drag to move or double-click to collapse |
 | **TARGET DPS — bold aqua** | DPS and name of the latest target hit |
 | **TOP INCOMING DAMAGE — bold bright red** | Three attackers ranked by recent damage, with their DPS |
+| **INCOMING CAP DRAIN — bold amber** | Combined GJ/sec and session GJ, NEUT/NOS split, top three sources by session total |
 | Controls | Play, Pause, Stop, Reset, Next Site and clipboard lock |
 | Alerts | Combat/EWAR notifications and session events |
 | ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
 | Missions or anomalies | Mission progress or site timing, counts and averages |
 
-![Character dashboard with sample combat data](dashboard-v0.6.1.png)
+![Character dashboard with sample combat data](dashboard-v0.7.1.png)
 
-*Preview uses synthetic combat data. The two combat panels stay aqua/red
+*Preview uses synthetic combat data. The meter panels stay aqua/red/amber
 across themes. Other panels follow the selected theme.*
 
 ISK, Missions, Anomalies and Alerts can detach into separate windows.
@@ -89,7 +92,7 @@ click-through behavior are intended for borderless/fixed-window play.
 
 ## Combat meters and controls
 
-Both panels use a **rolling 15-second window** and refresh at the configured
+The two damage panels use a **rolling 15-second window** and refresh at the configured
 UI interval, **250 ms by default**. DPS is damage inside that window divided
 by 15; it ramps up as hits arrive and falls to zero as they expire.
 
@@ -121,11 +124,47 @@ resetting the session. **Next Site** performs a full reset. For an
 MTU/salvage run, keep one session running to count all sites and the final
 loot haul together.
 
+## Incoming capacitor drain
+
+The amber **INCOMING CAP DRAIN** panel sums incoming neutralizer and
+Nosferatu loss as reported in the log. It shows the combined session GJ,
+separate NEUT/NOS session subtotals and a combined 15-second GJ/sec rate.
+It does not estimate capacitor remaining, regeneration, local module use,
+or net capacitor balance. Capacitor gained is excluded.
+
+The rate is recent loss divided by 15 and reaches zero without new events.
+Session totals and rankings remain visible. Sources are grouped by their
+full logged identity; hover reveals each source's NEUT/NOS split and last
+module. Decorated `ship [alliance] [corp] [pilot]` entries show the pilot
+name on the row. A changed logged identity creates a separate bucket.
+
+The supported English raw-log format starts the amount with the incoming
+`<color=0xffe57f7f>` marker. Neutralizers report positive `N GJ energy
+neutralized`. Incoming Nos reports negative `-N GJ energy drained to`;
+its magnitude is added as loss. `energy drained from`, positive Nos amounts,
+directionless text and unknown color markers are skipped. Keep the markup.
+Thousands separators and decimals are supported. Zero/-0 entries add no GJ
+and do not increment positive-loss hit counts. Distinct same-second entries
+each count once, even when their text matches.
+
+Press Play before tracking. Existing entries are not backfilled. Pause stops
+reading and the rate can expire; resume skips entries written while paused
+and starts at the end of the log. Stop freezes the display. Reset / Next Site
+clears the totals and leaves tracking stopped. Rates use monotonic arrival
+time, so a batch of delayed entries contributes when read.
+
+History JSON keeps `neut_received_gj`, `neut_hits` and `neut_sources_gj`
+as neutralizer-only fields. New sessions also save `nos_received_gj`,
+`nos_hits`, `nos_sources_gj` and combined `cap_drain_received_gj`,
+`cap_drain_hits`, `cap_drain_sources_gj`. Old records are not rewritten;
+missing Nos fields in old records mean not recorded. The History table's
+existing columns remain unchanged.
+
 ## Architecture
 
 The UI, parsing and existing session logic remain centered in `ratting.py`.
 Small modules isolate release identity, startup, log-path discovery and
-named combat metrics and monitor-aware placement.
+named combat metrics, incoming capacitor drain and monitor-aware placement.
 
 ```mermaid
 flowchart TD
@@ -144,6 +183,8 @@ flowchart TD
     L[Public ESI prices and loot clipboard] --> H
     D --> M[Local JSON settings and history]
     N[window_placement.py: monitor work areas and recovery] --> D
+    G --> O[CapDrainMeter: neut + Nos session GJ and 15-second rate]
+    O --> D
 ```
 
 | File / component | Responsibility |
@@ -153,6 +194,7 @@ flowchart TD
 | `app_info.py` | Product name, version, release tag, repository URL and credits |
 | `ratting.py` | Tkinter windows, log tailing/rotation, session state, themes, alerts and price workers |
 | `combat_meter.py` | Damage-line normalization, bounded named rolling totals, expiry and incoming ranking |
+| `neut_meter.py` | Incoming neutralizer/Nos parsing, separate and combined totals, source ranking and GJ/sec |
 | `eve_paths.py` | Redirected Documents, OneDrive, standard Documents and Linux/Proton path candidates |
 | `window_placement.py` | Monitor work areas, reachable title checks and dashboard recovery |
 | `build_release.py` | Verifies/stages Python, installs pinned wheels, tests and builds the versioned ZIP |
@@ -160,6 +202,7 @@ flowchart TD
 | `tests/test_release.py` | Startup, log paths, settings preservation and main-window checks |
 | `tests/test_combat.py` | Parsing, attribution, rolling totals, log-to-widget updates and character panels |
 | `tests/test_panels.py` | Multiple-pilot startup, row clicks, hidden/collapsed recovery and monitor geometry |
+| `tests/test_neuts.py` | Anonymized neut/Nos replay, sign/direction checks, totals/rates, duplicate records, UI and history |
 
 The UI uses Tk's event loop. File notifications and timer polling drive
 incremental log reading; market lookups run in background threads. Named
@@ -193,7 +236,7 @@ All app state is stored beside `ratting.py`:
 The `ratting_*` filenames and `ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app, extract v0.6.1 into a new folder, and copy
+To upgrade, close the old app, extract v0.7.1 into a new folder, and copy
 `ratting_config.json` and `ratting_history.json` into it before launching.
 The caches may also be copied. Do not overwrite the new runtime/source
 with files from the old release.
@@ -211,7 +254,7 @@ python ratting.py
 Keep the helper modules beside `ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.6.1 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.7.1 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -221,12 +264,12 @@ python build_release.py
 ```
 
 The builder verifies the official CPython 3.13.15 x64 runtime, installs
-hash-pinned wheels, runs a runtime self-test and all three regression suites,
+hash-pinned wheels, runs a runtime self-test and all four regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.6.1-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.7.1-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -242,10 +285,11 @@ beside the source, then run:
 runtime\python.exe -I -B tests\test_release.py
 runtime\python.exe -I -B tests\test_combat.py
 runtime\python.exe -I -B tests\test_panels.py
+runtime\python.exe -I -B tests\test_neuts.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.6.1` tag; the portable ZIP is the downloadable release
+belongs to the `v0.7.1` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -257,15 +301,16 @@ asset, distinct from GitHub's source-only ZIP.
   collapsed dashboards and saves their new positions without resetting data.
 - A pilot is absent from the fleet: enable it in Fleet Manager first.
 - Meters show zero: press Play and allow new combat hits to arrive.
+- Cap-drain total stays zero: check for incoming `GJ energy neutralized` or negative `GJ energy drained to` entries with original color tags, written while tracking.
 - Startup failure: read the console and `startup.log`, if created.
 - Runtime check: `START.bat --self-test` reports product/version, Python,
   Tk, package versions and log path without reading logs or the clipboard.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 32 automated checks and clean-extraction startup without
+Validation covers 60 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
-previews and combat tests use synthetic data. Live EVE sessions and online
+previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.
 
 See [HOW_TO.txt](HOW_TO.txt) and [CONTRIBUTING.md](CONTRIBUTING.md) for more.

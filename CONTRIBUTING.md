@@ -13,7 +13,7 @@ The portable Windows release bundles all these packages.
 
 - Keep UI/session changes in `ratting.py`, named combat metrics in
   `combat_meter.py`, path discovery in `eve_paths.py`, and release identity
-  in `app_info.py`. Monitor placement belongs in `window_placement.py`.
+  in `app_info.py`. Monitor placement belongs in `window_placement.py`; incoming neutralizer/Nos accounting belongs in `neut_meter.py`.
 - Keep Tk operations on the UI thread and slow lookups off it.
 - Preserve legacy JSON filenames and saved custom paths.
 - Treat log lines and clipboard contents as data, never executable input.
@@ -23,7 +23,7 @@ The portable Windows release bundles all these packages.
 
 ## Verification
 
-The release builder runs all three test suites against a fresh runtime:
+The release builder runs all four test suites against a fresh runtime:
 
 ```bat
 python build_release.py
@@ -36,9 +36,10 @@ the source and use:
 runtime\python.exe -I -B tests\test_release.py
 runtime\python.exe -I -B tests\test_combat.py
 runtime\python.exe -I -B tests\test_panels.py
+runtime\python.exe -I -B tests\test_neuts.py
 ```
 
-Use synthetic logs and isolated settings in tests. Do not commit personal
+Use synthetic or anonymized log fixtures and isolated settings in tests. Do not commit personal
 logs, JSON state, runtime binaries, build folders or caches. For changes
 that affect layout, inspect a rendered pilot window as well as test results.
 
@@ -49,7 +50,7 @@ performed. Include the application version, Windows/Python version,
 reproduction steps and a short redacted example when reporting a bug.
 Do not upload a complete private gamelog or clipboard dump.
 
-Release metadata lives in `app_info.py`. Monitor placement belongs in `window_placement.py`. Update the startup banner,
+Release metadata lives in `app_info.py`. Monitor placement belongs in `window_placement.py`; incoming neutralizer/Nos accounting belongs in `neut_meter.py`. Update the startup banner,
 README, changelog and release notes alongside it, then rebuild the ZIP.
 Tag the tested source commit and attach the versioned Windows ZIP to the
 release. GitHub's automatic source ZIP does not include the runtime.

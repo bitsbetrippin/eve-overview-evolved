@@ -1,7 +1,7 @@
 """Shared product identity, release version and attribution."""
 
 APP_NAME = "Eve-Overlay-Evolved"
-VERSION = "0.6.1"
+VERSION = "0.7.1"
 RELEASE_TAG = f"v{VERSION}"
 APP_TITLE = f"{APP_NAME} {RELEASE_TAG}"
 RELEASE_NAME = f"{APP_NAME}-{RELEASE_TAG}-Windows-x64"

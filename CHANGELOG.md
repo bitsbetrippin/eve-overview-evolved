@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.7.1 — 2026-09-22
+
+- Include incoming Nosferatu in the renamed INCOMING CAP DRAIN panel.
+- Combine neut/Nos loss in session GJ, rolling GJ/sec and source rankings;
+  add separate session and per-source NEUT/NOS subtotals.
+- Recognize negative `energy drained to` records as loss; exclude gains,
+  wrong directions/signs and unrecognized color markers. Zero adds no loss.
+- Preserve identical same-second records as separate activations while
+  incremental reading prevents recounting them on the next poll.
+- Keep history's neut-only fields; add Nos-only and combined fields.
+- Add 12 regression checks and an anonymized 130-record mixed log fixture.
+- Correct Pause documentation: existing resume behavior skips paused entries.
+
+## v0.7 — 2026-09-22
+
+- Add the amber INCOMING NEUTS dashboard panel with session GJ, rolling
+  15-second GJ/sec and the top three sources by session GJ.
+- Parse the incoming color-tagged neutralizer format, preserving source
+  and module details; skip outgoing/ambiguous records and Nosferatu.
+- Integrate Stop, Pause and Reset; retain neut totals and per-source amounts
+  in session history JSON, including sessions with only neut activity.
+- Add anonymized log fixtures and 16 neutralizer parsing/accounting/UI tests.
+- Update architecture/layout documentation and portable packaging.
+
 ## v0.6.1 — 2026-09-22
 
 - Open new dashboards beside the overview in a cascade, replacing the
