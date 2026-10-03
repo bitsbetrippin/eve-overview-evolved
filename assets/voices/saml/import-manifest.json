@@ -1,0 +1,42 @@
+[
+  {
+    "source": "Sam-Scrambled.mp3",
+    "source_sha256": "f987fd547dc27dbfed0fead33b018ed651e6f0f8755f7d75955d0fea4ddee3d0",
+    "output": "scrambled.wav",
+    "output_sha256": "d171ffa310a099f0003022a913351063c276c0bf15f3cb3310529b2d0a61caf1",
+    "duration_seconds": 3.631,
+    "channels": 1,
+    "sample_rate": 22050,
+    "pcm_bits": 16
+  },
+  {
+    "source": "Sam-Pointed.mp3",
+    "source_sha256": "df513a680cf25e05ecfbc1c12c6ae5fb78c228cca0064e9985894eac95630292",
+    "output": "pointed.wav",
+    "output_sha256": "248d0c19498a6cc57bcc8726c1fe87ce11f6e4d67f216849f358b446c2dde4a2",
+    "duration_seconds": 3.631,
+    "channels": 1,
+    "sample_rate": 22050,
+    "pcm_bits": 16
+  },
+  {
+    "source": "Sam-Web.mp3",
+    "source_sha256": "49b1b945ff8d6437391ccdf2571611189eaae2d59a3c91b38905042cccddf7b2",
+    "output": "webbed.wav",
+    "output_sha256": "b9a38600f4674dc05029f2b3f69227e68895e05498e9625ef2c270613133cefc",
+    "duration_seconds": 3.5,
+    "channels": 1,
+    "sample_rate": 22050,
+    "pcm_bits": 16
+  },
+  {
+    "source": "Sam-Jammed.mp3",
+    "source_sha256": "0502accc5a103735d68f5eeab2fd0b75c32cbd3644281548aec6fccee55ce67a",
+    "output": "jammed.wav",
+    "output_sha256": "8e2d5514ba687216713858a301d5b9459add340b1d7ca86acf05f6b61508ddf8",
+    "duration_seconds": 3.631,
+    "channels": 1,
+    "sample_rate": 22050,
+    "pcm_bits": 16
+  }
+]

@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import test_panels as harness
 from ewar_alerts import (AlertAudio, FILES, parse_incoming_ewar, amplify_wav, beep_wav,
-                         VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME)
+                         VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME, voice_files)
 ratting = harness.ratting
 
 
@@ -87,17 +87,17 @@ class AudioTests(unittest.TestCase):
     def test_stale_queue_is_discarded(self):
         played = []
         audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: 100)
-        audio.pending.extend([(90, 'SCRAM', 'Voice', 'Robot', 'Low (100%)'), (99, 'WEB', 'Voice', 'Robot', 'Low (100%)')])
+        audio.pending.extend([(90, 'SCRAM', 'Voice', 'Robot', 'Low (100%)', False), (99, 'WEB', 'Voice', 'Robot', 'Low (100%)', False)])
         audio._drain()
         self.assertEqual(played, [('WEB', 'Voice', 'Robot', 'Low (100%)')])
 
     def test_bundled_wavs_are_short_audible_pcm(self):
-        for path in (harness.APP/'assets'/folder/name for folder in VOICE_FOLDERS.values() for name in FILES.values()):
+        for path in (harness.APP/'assets'/folder/name for voice,folder in VOICE_FOLDERS.items() for name in voice_files(voice).values()):
             with wave.open(str(path), 'rb') as stream:
                 self.assertEqual((stream.getnchannels(), stream.getsampwidth()), (1, 2))
                 duration = stream.getnframes() / stream.getframerate()
                 self.assertGreater(duration, .5)
-                self.assertLess(duration, 3)
+                self.assertLess(duration, 5)
                 samples = array('h', stream.readframes(stream.getnframes()))
                 self.assertGreater(max(abs(x) for x in samples), 500)
 
@@ -144,7 +144,7 @@ class AudioTests(unittest.TestCase):
         for name in FILES.values():
             hashes={hashlib.sha256((harness.APP/'assets'/folder/name).read_bytes()).hexdigest()
                     for folder in VOICE_FOLDERS.values()}
-            self.assertEqual(len(hashes),4)
+            self.assertEqual(len(hashes),len(VOICE_FOLDERS))
 
     def test_playback_uses_selected_voice_and_gain_in_memory(self):
         audio=AlertAudio(harness.APP/'assets')
@@ -176,6 +176,47 @@ class AudioTests(unittest.TestCase):
         self.assertEqual(Path(load.call_args.args[0]),harness.APP/'assets/webbed.wav')
         self.assertEqual(load.call_args.args[1],3)
         self.assertEqual(sound.PlaySound.call_args.args[0],b'robot-wav')
+
+    def test_saml_jam_is_preview_only_and_other_styles_cannot_play_it(self):
+        played=[]
+        audio=AlertAudio('.',player=lambda *args: played.append(args),clock=lambda:100)
+        with patch('ewar_alerts.threading.Thread'):
+            self.assertFalse(audio.notify('JAM',voice='SamL'))
+            self.assertFalse(audio.notify('JAM',voice='Robot',preview=True))
+            self.assertTrue(audio.notify('JAM',voice='SamL',volume='High (300%)',preview=True))
+        audio._drain()
+        self.assertEqual(played,[('JAM','Voice','SamL','High (300%)')])
+        self.assertIsNone(parse_incoming_ewar('(notify) You are jammed!'))
+
+    def test_saml_preview_plays_full_clip_with_gain(self):
+        original=(harness.APP/'assets/voices/saml/jammed.wav').read_bytes()
+        audio=AlertAudio(harness.APP/'assets')
+        with patch('ewar_alerts.winsound') as sound:
+            audio._play('JAM','Voice','SamL','High (300%)')
+        result=sound.PlaySound.call_args.args[0]
+        self.assertEqual(result,amplify_wav(original,3))
+        before,_=self.wav_samples(original)
+        after,_=self.wav_samples(result)
+        self.assertEqual(before.nframes,after.nframes)
+
+    def test_all_four_saml_previews_survive_the_live_alert_expiry(self):
+        played=[]
+        audio=AlertAudio('.',player=lambda *args: played.append(args),clock=lambda:100)
+        with patch('ewar_alerts.threading.Thread'):
+            for kind in ('SCRAM','POINT','WEB','JAM'):
+                self.assertTrue(audio.notify(kind,voice='SamL',preview=True))
+        audio.clock=lambda:115
+        audio._drain()
+        self.assertEqual([p[0] for p in played],['SCRAM','POINT','WEB','JAM'])
+
+    def test_imported_saml_files_match_the_conversion_manifest(self):
+        folder=harness.APP/'assets/voices/saml'
+        records=json.loads((folder/'import-manifest.json').read_text())
+        self.assertEqual({r['output'] for r in records},set(voice_files('SamL').values()))
+        for record in records:
+            self.assertEqual(hashlib.sha256((folder/record['output']).read_bytes()).hexdigest(),record['output_sha256'])
+            with wave.open(str(folder/record['output']),'rb') as stream:
+                self.assertAlmostEqual(stream.getnframes()/stream.getframerate(),record['duration_seconds'],places=2)
 
 
 class UISettingsTests(unittest.TestCase):
@@ -213,6 +254,9 @@ class UISettingsTests(unittest.TestCase):
     def test_sound_setting_and_preview_buttons(self):
         with patch.object(ratting._ALERT_AUDIO, 'notify') as notify:
             for kind, button in self.settings._audio_test_buttons.items():
+                if kind == 'JAM':
+                    self.assertEqual(str(button.cget('state')),'disabled')
+                    continue
                 button.invoke()
                 notify.assert_called_with(kind, 'Voice', preview=True, voice='Robot', volume='Low (100%)')
         self.settings.audio_var.set('Off')
@@ -243,9 +287,28 @@ class UISettingsTests(unittest.TestCase):
         self.assertTrue(self.settings._ap.winfo_viewable())
         self.assertFalse(self.settings._ap_dirty)
 
+    def test_saml_selection_enables_placeholder_and_persists(self):
+        self.settings.voice_var.set('SamL')
+        self.settings.volume_var.set('Medium (200%)')
+        self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'normal')
+        self.assertIn('preview only',self.settings._jam_preview_note.cget('text'))
+        with patch.object(ratting._ALERT_AUDIO,'notify') as notify:
+            self.settings._audio_test_buttons['JAM'].invoke()
+            notify.assert_called_once_with('JAM','Voice',preview=True,voice='SamL',volume='Medium (200%)')
+        self.settings._apply()
+        saved=json.loads(Path(ratting.CONFIG_FILE).read_text(encoding='utf-8'))
+        self.assertEqual(saved['ewar_voice'],'SamL')
+        self.settings.w.destroy()
+        self.settings=ratting.MainUISettings(self.ui.root,self.ui)
+        self.ui.root.update()
+        self.assertEqual(self.settings.voice_var.get(),'SamL')
+        self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'normal')
+        self.settings.voice_var.set('Robot')
+        self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'disabled')
+
     def test_hidden_log_events_route_only_incoming_audio(self):
         win = self.ui._windows['123']
-        self.ui.cfg.update(ewar_voice='Commanding',ewar_volume='Medium (200%)')
+        self.ui.cfg.update(ewar_voice='SamL',ewar_volume='Medium (200%)')
         win._go()
         self.ui._toggle_window('123')
         lines = ['(combat) Warp scramble attempt from Pirate to you!',
@@ -257,7 +320,7 @@ class UISettingsTests(unittest.TestCase):
         with patch.object(ratting._ALERT_AUDIO, 'notify') as notify, patch.object(win, '_flash_alert', wraps=win._flash_alert):
             win._read_logs_once()
             self.assertEqual([c.args for c in notify.call_args_list], [('SCRAM','Voice'),('POINT','Voice'),('WEB','Voice')])
-            self.assertTrue(all(c.kwargs==dict(voice='Commanding',volume='Medium (200%)') for c in notify.call_args_list))
+            self.assertTrue(all(c.kwargs==dict(voice='SamL',volume='Medium (200%)') for c in notify.call_args_list))
             win._read_logs_once()
             self.assertEqual(notify.call_count, 3)
         self.assertEqual([a[1] for a in win.data.alerts], ['SCRAM','POINT','WEB'])

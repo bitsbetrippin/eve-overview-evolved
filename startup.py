@@ -24,9 +24,9 @@ def prepare():
         if not (ROOT / name).is_file():
             raise FileNotFoundError(f"Missing {name}. Extract the entire portable release ZIP.")
 
-    from ewar_alerts import VOICE_FOLDERS, FILES
-    for folder in VOICE_FOLDERS.values():
-        for name in FILES.values():
+    from ewar_alerts import VOICE_FOLDERS, voice_files
+    for voice, folder in VOICE_FOLDERS.items():
+        for name in voice_files(voice).values():
             path = ROOT / "assets" / folder / name
             if not path.is_file():
                 raise FileNotFoundError(f"Missing {path.relative_to(ROOT)}. Extract the entire portable release ZIP.")

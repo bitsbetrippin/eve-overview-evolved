@@ -21,12 +21,19 @@ except ImportError:
 LABELS = {"SCRAM": "SCRAMBLED", "POINT": "POINTED", "WEB": "WEBBED"}
 FILES = {"SCRAM": "scrambled.wav", "POINT": "pointed.wav", "WEB": "webbed.wav"}
 VOICE_FOLDERS = {"Robot": "", "Commanding": "voices/commanding",
-                 "Dramatic": "voices/dramatic", "News anchor": "voices/news_anchor"}
+                 "Dramatic": "voices/dramatic", "News anchor": "voices/news_anchor",
+                 "SamL": "voices/saml"}
+# Packaged for manual preview only; no JAM log trigger until its format is verified.
+PREVIEW_CLIPS = {"SamL": {"JAM": "jammed.wav"}}
 VOLUME_GAINS = {"Low (100%)": 1.0, "Medium (200%)": 2.0, "High (300%)": 3.0}
 DEFAULT_VOICE = "Robot"
 DEFAULT_VOLUME = "Low (100%)"
 _TACKLE = re.compile(r"\(combat\)\s+Warp (scramble|disruption) attempt from (.+?) to you[!.]?\s*$", re.I)
 _WEB = re.compile(r"\(notify\)\s+(.+?) has started webifying you[!.]?\s*$", re.I)
+
+
+def voice_files(voice):
+    return {**FILES, **PREVIEW_CLIPS.get(voice, {})}
 
 
 def parse_incoming_ewar(raw):
@@ -77,7 +84,7 @@ def amplify_wav(data, gain):
     return output.getvalue()
 
 
-@lru_cache(maxsize=48)
+@lru_cache(maxsize=64)
 def voice_wav(path, gain):
     return amplify_wav(Path(path).read_bytes(), gain)
 
@@ -111,16 +118,18 @@ class AlertAudio:
         self.assets = Path(assets)
         self.player = player or self._play
         self.clock = clock
-        self.pending = deque(maxlen=3)
+        self.pending = deque(maxlen=4)
         self.last = {}
         self.lock = threading.Lock()
         self.worker = None
 
     def notify(self, kind, mode="Voice", preview=False, *, voice=DEFAULT_VOICE, volume=DEFAULT_VOLUME):
-        if kind not in FILES or mode not in ("Voice", "Beep"):
-            return False
         voice = voice if voice in VOICE_FOLDERS else DEFAULT_VOICE
         volume = volume if volume in VOLUME_GAINS else DEFAULT_VOLUME
+        if mode not in ("Voice", "Beep"):
+            return False
+        if kind not in FILES and not (preview and kind in PREVIEW_CLIPS.get(voice, {})):
+            return False
         with self.lock:
             now = self.clock()
             if not preview and now - self.last.get(kind, -float("inf")) < 10:
@@ -129,7 +138,7 @@ class AlertAudio:
                 return False
             if not preview:
                 self.last[kind] = now
-            self.pending.append((now, kind, mode, voice, volume))
+            self.pending.append((now, kind, mode, voice, volume, preview))
             if self.worker is None:
                 self.worker = threading.Thread(target=self._drain, daemon=True)
                 self.worker.start()
@@ -146,8 +155,8 @@ class AlertAudio:
                 if not self.pending:
                     self.worker = None
                     return
-                at, kind, mode, voice, volume = self.pending.popleft()
-            if self.clock() - at > 8:
+                at, kind, mode, voice, volume, preview = self.pending.popleft()
+            if not preview and self.clock() - at > 8:
                 continue
             try:
                 self.player(kind, mode, voice, volume)
@@ -160,8 +169,9 @@ class AlertAudio:
         gain = VOLUME_GAINS.get(volume, 1.0)
         data = None
         if mode == "Voice":
-            chosen = self.assets / VOICE_FOLDERS.get(voice, "") / FILES[kind]
-            fallback = self.assets / FILES[kind]
+            filename = voice_files(voice)[kind]
+            chosen = self.assets / VOICE_FOLDERS.get(voice, "") / filename
+            fallback = self.assets / filename
             for path in dict.fromkeys((chosen, fallback)):
                 try:
                     data = voice_wav(str(path), gain)

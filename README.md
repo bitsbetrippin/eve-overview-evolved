@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.7.4
+# Eve-Overlay-Evolved v0.7.5
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.7.4`.
+**Release tag:** `v0.7.5`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.7.5-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,26 +36,28 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.7.4
+## What's new in v0.7.5
 
-- **ALERT VOLUME** selector: **Low (100%)**, **Medium (200%)**, **High (300%)**.
-  These are 1x, 2x and 3x digital gain for both voice and beep alerts. A soft
-  peak limiter prevents overload; Windows/app mixer volume and speaker output
-  still determine the actual loudness. Windows master volume is unchanged.
-- **VOICE STYLE** selector: **Robot**, **Commanding**, **Dramatic**, **News anchor**.
-  The three new styles are original synthetic voices with different timbre,
-  pacing and phrasing, not actor recordings or exact celebrity replicas.
-- TEST buttons preview the selected style and volume before applying. Apply
-  persists the choices and uses them for new alerts across the fleet.
-- Upgrades keep the original Robot voice at Low (100%) until changed. The
-  optional Initiative logo, incoming-only EWAR parser and repeat limit remain.
+- **SamL** is a fifth option in **Settings > VOICE STYLE**, using four
+  user-supplied MP3 recordings converted to bundled 16-bit mono WAVs.
+- Scrambled, Pointed and Webbed use the existing incoming-only automatic
+  triggers. **Jammed is a placeholder for a future release**, available only
+  through the **Jammed*** TEST button while SamL is selected.
+- The full supplied recordings are preserved (approximately 3.5–3.6 seconds).
+  The original MP3s remain unchanged. SamL supports Low/Medium/High gain and
+  saved preferences just like the other styles.
+- Manual previews queue without live-alert expiry, so all four full clips can
+  be tested in sequence. Live alerts still discard queued events older than
+  8 seconds and limit repeats of each effect to once every 10 seconds.
 
-The 12 voice WAVs are bundled for offline playback. Different effects play
-sequentially, with a 10-second repeat limit per effect across the fleet.
-Queued clips older than 8 seconds are discarded; an already-playing clip may
-finish after a settings change. Hidden dashboards require Background Monitoring.
-Alerts reflect incoming English log messages, including tackle attempts; they
-do not continuously measure tackle status or announce when an effect ends.
+Select **EWAR SOUND: Voice**, **VOICE STYLE: SamL**, choose volume, preview,
+then click **APPLY**. Defaults remain Robot / Low (100%) until changed.
+The four existing synthetic styles and Initiative logo option remain available.
+
+All 16 WAVs are bundled; no decoder or internet is needed at runtime.
+Jammed has no automatic trigger in this release. Existing automatic warnings
+reflect incoming English log events, not a continuous measurement of tackle
+status. Hidden dashboards require Background Monitoring and a running session.
 
 ## Interface layout
 
@@ -68,7 +70,7 @@ Enable the optional INIT. logo and choose EWAR sound in Settings, then Apply.
 Click a character row to show/hide that pilot's dashboard; the OVL column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.7.4](overview-v0.7.4.png)
+![Fleet overview in v0.7.5](overview-v0.7.5.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
@@ -83,7 +85,7 @@ Each **character dashboard** is arranged from top to bottom:
 | ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
 | Missions or anomalies | Mission progress or site timing, counts and averages |
 
-![Character dashboard with sample combat data](dashboard-v0.7.4.png)
+![Character dashboard with sample combat data](dashboard-v0.7.5.png)
 
 *Preview uses synthetic combat data. The meter panels stay aqua/red/amber
 across themes. Other panels follow the selected theme.*
@@ -243,7 +245,7 @@ All app state is stored beside `ratting.py`:
 The `ratting_*` filenames and `ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app, extract v0.7.4 into a new folder, and copy
+To upgrade, close the old app, extract v0.7.5 into a new folder, and copy
 `ratting_config.json` and `ratting_history.json` into it before launching.
 The caches may also be copied. Do not overwrite the new runtime/source
 with files from the old release.
@@ -261,7 +263,7 @@ python ratting.py
 Keep the helper modules beside `ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.7.4 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.7.5 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -275,8 +277,8 @@ hash-pinned wheels, runs a runtime self-test and all four regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.7.5-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.7.5-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -296,7 +298,7 @@ runtime\python.exe -I -B tests\test_neuts.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.7.4` tag; the portable ZIP is the downloadable release
+belongs to the `v0.7.5` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -315,7 +317,7 @@ asset, distinct from GitHub's source-only ZIP.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 83 automated checks and clean-extraction startup without
+Validation covers 88 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
 previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.
@@ -329,10 +331,10 @@ Bundled notices are in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 `ewar_alerts.py` owns incoming EWAR parsing and one bounded audio queue shared
 by the fleet. `ratting.py` supplies per-character visual alerts and persisted
 `initiative_logo`, `ewar_audio`, `ewar_voice` and `ewar_volume` settings. Logo changes apply live to all windows.
-`assets/` contains the official alliance PNG, 12 generated WAVs and source notices.
+`assets/` contains the official alliance PNG, 12 generated WAVs plus four user-supplied SamL WAVs and source notices.
 `build_release.py` copies that directory; startup verifies that the assets exist.
 `tests/test_ewar.py` covers direction, all alert types, queue behavior, WAV integrity,
-and actual Tk settings/logo/log-reader integration. The suite brings the total to 83.
+and actual Tk settings/logo/log-reader integration. The suite brings the total to 88.
 
 To regenerate the voice clips as a developer, use `generate_alert_audio.ps1
 -EspeakExe C:/path/to/espeak-ng.exe` with eSpeak NG 1.52.0 and its data directory.
@@ -341,4 +343,16 @@ generates the other three styles. eSpeak needs the en-us language and m1/m3/klat
 voice variants to regenerate these. Neither synthesizer nor generator
 is required for normal use. Asset credits and sources are in `assets/NOTICE.txt`.
 
-![Voice and volume settings](settings-v0.7.4.png)
+![Voice and volume settings](settings-v0.7.5.png)
+
+### SamL clips
+
+`assets/voices/saml/` contains `scrambled.wav`, `pointed.wav`, `webbed.wav`
+and `jammed.wav`. The last is a preview-only placeholder. `import-manifest.json`
+records the original filenames, checksums, converted checksums and full durations.
+`import_saml_audio.py --source <folder>` is a developer-only import helper requiring
+miniaudio 1.71; it converts Sam-Scrambled.mp3, Sam-Pointed.mp3, Sam-Web.mp3 and
+Sam-Jammed.mp3. The decoder is not shipped or required for playback.
+For manual replacements, exit the app to clear its audio cache, then replace the
+WAVs with the same filenames using uncompressed signed 16-bit PCM, preferably
+mono 22,050 Hz. Clips do not get truncated when the volume booster is applied.

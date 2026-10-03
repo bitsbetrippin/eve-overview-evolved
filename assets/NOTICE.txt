@@ -1,4 +1,4 @@
-ASSET SOURCES — Eve-Overlay-Evolved v0.7.4
+ASSET SOURCES — Eve-Overlay-Evolved v0.7.5
 
 initiative.png: The Initiative. [INIT.], alliance ID 1900696668.
 Unmodified 128px logo downloaded 2026-10-03 from CCP's official image service:
@@ -21,3 +21,12 @@ warnings. Levels are matched approximately to the original Robot's average
 amplitude; runtime applies the selected digital gain with soft peak limiting.
 No actor recordings, celebrity voice models or voice cloning were used.
 Only generated WAVs are distributed; eSpeak's engine and voice data are not.
+
+SamL (assets/voices/saml): four audio files supplied by the user for inclusion
+under this name: Sam-Scrambled.mp3, Sam-Pointed.mp3, Sam-Web.mp3, Sam-Jammed.mp3.
+Converted to mono signed 16-bit PCM WAV at 22,050 Hz with miniaudio 1.71.
+Full audio content/duration is retained; the originals were not modified.
+The label is user-requested and does not certify speaker identity or endorsement.
+Import metadata and checksums: voices/saml/import-manifest.json.
+miniaudio is used only during conversion; no decoder is bundled with the app.
+Project: https://github.com/irmen/pyminiaudio

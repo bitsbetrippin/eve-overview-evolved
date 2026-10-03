@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.5 — 2026-10-03
+
+- Add SamL voice selection with four supplied recordings converted to 16-bit mono WAVs.
+- Route SamL scrambled/pointed/webbed clips through existing gain and event handling.
+- Include Jammed as an explicitly marked manual-preview placeholder, with no log trigger.
+- Preserve full clip durations and keep all four queued manual previews from expiring.
+- Five new regression checks cover imports, previews, routing and saved selection (88 total).
+
 ## v0.7.4 — 2026-10-03
 
 - Low/Medium/High digital gain (100%/200%/300%) with peak limiting for voice and beep.

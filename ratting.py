@@ -5208,13 +5208,22 @@ class MainUISettings:
         preview_row.pack(fill="x", pady=(0, 7))
         tk.Label(preview_row, text="TEST", font=lf, bg=BG_POP, fg=TD).pack(side="left")
         self._audio_test_buttons = {}
-        for kind, word in (("SCRAM", "Scrambled"), ("POINT", "Pointed"), ("WEB", "Webbed")):
+        for kind, word in (("SCRAM", "Scrambled"), ("POINT", "Pointed"), ("WEB", "Webbed"), ("JAM", "Jammed*")):
             button = tk.Button(preview_row, text=word, font=("Consolas", 8),
                                bg=BG_H, fg=T0, relief="flat",
                                command=lambda k=kind: _ALERT_AUDIO.notify(k, self.audio_var.get(), preview=True,
                                    voice=self.voice_var.get(), volume=self.volume_var.get()))
             button.pack(side="left", padx=2)
             self._audio_test_buttons[kind] = button
+
+        self._jam_preview_note = tk.Label(body, text="", font=("Consolas", 8), bg=BG_POP, fg=TD)
+        self._jam_preview_note.pack(anchor="w", pady=(0, 2))
+        def _update_extra_previews(*_):
+            saml = self.voice_var.get() == "SamL"
+            self._audio_test_buttons["JAM"].configure(state="normal" if saml else "disabled")
+            self._jam_preview_note.configure(text="* Jammed: preview only; automatic alerts pending." if saml else "")
+        self.voice_var.trace_add("write", _update_extra_previews)
+        _update_extra_previews()
 
         # Photographie des valeurs à l'ouverture : c'est la référence qui permet de
         # savoir s'il reste quelque chose à appliquer.
