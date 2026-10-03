@@ -1,10 +1,14 @@
 """Apply a mild robot texture to the newly synthesized mono PCM voice clips."""
 from array import array
+import argparse
 import math
 from pathlib import Path
 import wave
 
-for name in ('scrambled', 'pointed', 'webbed'):
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--words', nargs='+', choices=('scrambled', 'pointed', 'webbed', 'jammed'),
+                    default=('scrambled', 'pointed', 'webbed', 'jammed'))
+for name in parser.parse_args().words:
     path = Path(__file__).resolve().parent / 'assets' / (name + '.wav')
     with wave.open(str(path), 'rb') as source:
         params = source.getparams()

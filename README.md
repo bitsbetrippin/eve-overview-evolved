@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.7.6
+# Eve-Overlay-Evolved v0.7.7
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.7.6`.
+**Release tag:** `v0.7.7`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.7.6-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.7.7-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,34 +36,34 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.7.6
+## What's new in v0.7.7
 
-EWAR audio now distinguishes **who is targeted** for scram, point and web events:
+**Jammed is now a live personal alert**, using the confirmed English combat-log
+format `You're jammed by <attacker> - <ECM module>`. The real rich-text format
+with its extra separator is supported. The dashboard shows **JAMMED by** and
+the attacker's identity in the EWAR alert color, with the usual pulse.
 
-| EWAR SOUND | Your character is targeted | Another target is affected |
-| --- | --- | --- |
-| Voice | Your selected voice, including SamL | Beep |
-| Beep | Beep | Beep |
-| Off | Silent | Silent |
+- **Voice:** personal scram, point, web and jam events play the selected voice.
+- **Beep:** personal events use the beep instead. **Off:** mutes all alerts.
+- Other-target scram/point/web events keep using a beep when present in the log.
+  The provided log confirms personal jams only; nearby/outgoing jam detection
+  awaits a verified log format. Generic lock failures, warp interference and
+  sensor recalibration messages never count as confirmed jams.
 
-Other targets include pilots, drones and targets of your own EWAR when those
-events appear in the monitored English gamelog. Only the exact recipient
-`you` counts as the log's character; names containing that word do not.
-Nearby events do not create a personal SCRAMBLED/POINTED/WEBBED visual warning.
+The existing full **SamL jammed.wav** is now used automatically. Robot,
+Commanding, Dramatic and News anchor each gain their own Jammed clip, and the
+**Jammed** TEST button is enabled for all five styles. All **20 WAVs** are
+bundled for offline playback. Volume gain remains 100% / 200% / 300%.
 
-Personal alerts have their own repeat limits and play before queued nearby
-beeps. Both groups limit repeats of each effect to once every 10 seconds
-across the fleet, and discard live queued events older than 8 seconds.
-A clip already playing finishes before the next alert starts.
+Repeated jam records share the 10-second audio cooldown. Personal warnings
+play before queued nearby beeps, with separate repeat limits. Personal queued
+events now expire after **15 seconds** so four long SamL clips can play in turn;
+nearby beeps still expire after 8 seconds. An already playing clip finishes
+before the next begins. These are log-event warnings, not continuous effect
+status or a measurement of jam duration.
 
 Select **Settings > EWAR SOUND: Voice**, choose **VOICE STYLE** and
 **ALERT VOLUME**, then **APPLY**. Existing saved choices are preserved.
-Robot, Commanding, Dramatic, News anchor and SamL remain available, with
-Low/Medium/High (100%/200%/300%) gain for both voices and beeps.
-
-**Jammed remains a SamL preview-only placeholder.** No automatic jam detection
-is added. All 16 voice WAVs remain bundled for offline playback. Alerts reflect
-recorded log events, not continuous effect status or events absent from your log.
 Hidden dashboards require Background Monitoring and a running session.
 
 ## Interface layout
@@ -77,7 +77,7 @@ Enable the optional INIT. logo and choose EWAR sound in Settings, then Apply.
 Click a character row to show/hide that pilot's dashboard; the OVL column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.7.6](overview-v0.7.6.png)
+![Fleet overview in v0.7.7](overview-v0.7.7.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
@@ -92,7 +92,7 @@ Each **character dashboard** is arranged from top to bottom:
 | ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
 | Missions or anomalies | Mission progress or site timing, counts and averages |
 
-![Character dashboard with sample combat data](dashboard-v0.7.6.png)
+![Character dashboard with sample combat data](dashboard-v0.7.7.png)
 
 *Preview uses synthetic combat data. The meter panels stay aqua/red/amber
 across themes. Other panels follow the selected theme.*
@@ -208,7 +208,7 @@ flowchart TD
 | `ratting.py` | Tkinter windows, log tailing/rotation, session state, themes, alerts and price workers |
 | `combat_meter.py` | Damage-line normalization, bounded named rolling totals, expiry and incoming ranking |
 | `neut_meter.py` | Incoming neutralizer/Nos parsing, separate and combined totals, source ranking and GJ/sec |
-| `ewar_alerts.py` | Recipient-aware tackle/web parsing; prioritized personal voice and nearby beep playback, style selection and limited PCM gain |
+| `ewar_alerts.py` | Recipient-aware tackle/web and confirmed personal ECM parsing; prioritized personal voice and nearby beep playback, style selection and limited PCM gain |
 | `assets/` | Initiative logo, robotic WAV warnings and source notices |
 | `eve_paths.py` | Redirected Documents, OneDrive, standard Documents and Linux/Proton path candidates |
 | `window_placement.py` | Monitor work areas, reachable title checks and dashboard recovery |
@@ -252,7 +252,7 @@ All app state is stored beside `ratting.py`:
 The `ratting_*` filenames and `ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app, extract v0.7.6 into a new folder, and copy
+To upgrade, close the old app, extract v0.7.7 into a new folder, and copy
 `ratting_config.json` and `ratting_history.json` into it before launching.
 The caches may also be copied. Do not overwrite the new runtime/source
 with files from the old release.
@@ -270,7 +270,7 @@ python ratting.py
 Keep the helper modules beside `ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.7.6 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.7.7 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -284,8 +284,8 @@ hash-pinned wheels, runs a runtime self-test and all four regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.7.6-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.7.6-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.7.7-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.7.7-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -305,7 +305,7 @@ runtime\python.exe -I -B tests\test_neuts.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.7.6` tag; the portable ZIP is the downloadable release
+belongs to the `v0.7.7` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -324,7 +324,7 @@ asset, distinct from GitHub's source-only ZIP.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 98 automated checks and clean-extraction startup without
+Validation covers 104 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
 previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.
@@ -339,10 +339,11 @@ Bundled notices are in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 the fleet, with separate bounded queues and repeat limits for personal and
 nearby events. Personal clips play first; nearby events always use a beep. `ratting.py` supplies per-character visual alerts and persisted
 `initiative_logo`, `ewar_audio`, `ewar_voice` and `ewar_volume` settings. Logo changes apply live to all windows.
-`assets/` contains the official alliance PNG, 12 generated WAVs plus four user-supplied SamL WAVs and source notices.
+`assets/` contains the official alliance PNG, 16 generated WAVs plus four user-supplied SamL WAVs and source notices.
 `build_release.py` copies that directory; startup verifies that the assets exist.
-`tests/test_ewar.py` covers direction, all alert types, queue behavior, WAV integrity,
-and actual Tk settings/logo/log-reader integration. The suite brings the total to 98.
+`tests/test_ewar.py` replays anonymized real ECM records and covers direction,
+all alert types, duplicate cooldown, queue behavior, WAV integrity,
+and actual Tk settings/logo/log-reader integration. The suite brings the total to 104.
 
 To regenerate the voice clips as a developer, use `generate_alert_audio.ps1
 -EspeakExe C:/path/to/espeak-ng.exe` with eSpeak NG 1.52.0 and its data directory.
@@ -351,12 +352,12 @@ generates the other three styles. eSpeak needs the en-us language and m1/m3/klat
 voice variants to regenerate these. Neither synthesizer nor generator
 is required for normal use. Asset credits and sources are in `assets/NOTICE.txt`.
 
-![Voice and volume settings](settings-v0.7.6.png)
+![Voice and volume settings](settings-v0.7.7.png)
 
 ### SamL clips
 
 `assets/voices/saml/` contains `scrambled.wav`, `pointed.wav`, `webbed.wav`
-and `jammed.wav`. The last is a preview-only placeholder. `import-manifest.json`
+and `jammed.wav`. All four support automatic personal alerts. `import-manifest.json`
 records the original filenames, checksums, converted checksums and full durations.
 `import_saml_audio.py --source <folder>` is a developer-only import helper requiring
 miniaudio 1.71; it converts Sam-Scrambled.mp3, Sam-Pointed.mp3, Sam-Web.mp3 and

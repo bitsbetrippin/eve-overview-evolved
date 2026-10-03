@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.7.7 — 2026-10-03
+
+- Detect personal ECM jams from the contributed `You're jammed by` combat format, preserving attacker identity.
+- Activate the full SamL Jammed clip; add Jammed recordings and previews for the other four voice styles.
+- Show personal JAMMED alerts with the EWAR color and pulse; preserve Voice/Beep/Off and volume settings.
+- Suppress duplicate jam audio through the existing 10-second cooldown; ignore generic targeting failures.
+- Extend personal queue expiry to 15 seconds for four full SamL alerts; nearby expiry stays 8 seconds.
+- Add anonymized real-log fixtures and six new checks (104 total). Nearby/outgoing jam formats remain unverified.
+
 ## v0.7.6 — 2026-10-03
 
 - Beep for scram/point/web events targeting another pilot, drone or outgoing target in the monitored log.

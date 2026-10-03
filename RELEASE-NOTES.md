@@ -1,27 +1,30 @@
-# Eve-Overlay-Evolved v0.7.6
+# Eve-Overlay-Evolved v0.7.7
 
-Extract **Eve-Overlay-Evolved-v0.7.6-Windows-x64.zip** and run **START.bat**.
+Extract **Eve-Overlay-Evolved-v0.7.7-Windows-x64.zip** and run **START.bat**.
 
-In **Settings > EWAR SOUND: Voice**, scram, point and web events targeting
-your character play your selected voice. Events targeting another pilot,
-drone or your own outgoing EWAR target play a beep when present in the log.
-Only personal events produce the personal EWAR visual warning.
+**Jammed is now live.** Confirmed personal `You're jammed by` combat events
+play your selected voice and show a red JAMMED alert with the attacker's identity.
+SamL uses the full clip already supplied. Robot, Commanding, Dramatic and
+News anchor each have a new Jammed clip; its TEST button works for every style.
 
-Personal alerts play before queued nearby beeps, and nearby activity cannot
-consume their repeat limit. Each effect repeats at most once every 10 seconds
-per personal/nearby group across the fleet. Live queued events expire after
-8 seconds; an already playing clip finishes before the next starts.
+Settings > EWAR SOUND: Voice > VOICE STYLE: SamL (or another style) > APPLY.
+Beep mode beeps; Off mutes. Low/Medium/High gain and saved choices are preserved.
+Other-target scram/point/web events still beep. The supplied log confirms only
+personal jamming; nearby/outgoing jam detection awaits its own verified format.
+Generic targeting failures, warp interference and sensor tuning do not trigger jams.
 
-Beep mode beeps for both groups; Off mutes both. Saved voice and volume choices
-are preserved. Low/Medium/High (100%/200%/300%) gain works for both sounds.
-SamL and all other voice styles remain available. Jammed stays preview-only.
-Only recognized English gamelog events can trigger alerts.
+Duplicate jam records share the 10-second audio cooldown. Personal alerts retain
+priority over nearby beeps; their queue expiry is now 15 seconds so four full
+SamL clips can play in turn. Nearby expiry stays 8 seconds. Alerts describe
+recorded events, not continuous jam state or duration.
 
-Upgrade: close the old app, extract into a new folder, then copy
-ratting_config.json and ratting_history.json before launching.
+All 20 audio WAVs are bundled. No Python installation or audio synthesis setup
+is needed. Upgrade into a fresh folder, copying ratting_config.json and
+ratting_history.json from the closed old app if you want to retain your settings.
 
-Validation: 98 automated checks, including recipient routing, independent
-cooldowns, queue priority, mute/Beep settings and clean portable startup.
+Validation: 104 automated checks, including anonymized real ECM replay,
+duplicate suppression, all five voices, volume levels and portable startup.
+The contributed full log contains three jam records, all recognized as personal.
 Live EVE gameplay has not been tested.
 
 Contributions: @bitsbetrippin. Original concept/base: Eve-Ratting by @psychojf.

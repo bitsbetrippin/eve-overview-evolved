@@ -17,9 +17,37 @@ import test_panels as harness
 from ewar_alerts import (AlertAudio, FILES, parse_incoming_ewar, parse_ewar, amplify_wav, beep_wav,
                          VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME, voice_files)
 ratting = harness.ratting
+JAM_LINES = (Path(__file__).parent/'fixtures/incoming_jams.txt').read_text(encoding='utf-8').splitlines()
 
 
 class ParserTests(unittest.TestCase):
+    def test_real_jamming_lines_preserve_attacker_identity(self):
+        expected = ['Kitsune [ALLY] [CORP] [Test Jammer A]',
+                    'Kitsune [ALLY] [CORP] [Test Jammer A]',
+                    'Bellicose [ALLY] [-TEST-] [Test Jammer B]']
+        for line, source in zip(JAM_LINES, expected):
+            event = parse_ewar(line)
+            self.assertEqual((event.kind, event.source, event.target), ('JAM', source, 'you'))
+            self.assertTrue(event.incoming)
+            self.assertEqual(parse_incoming_ewar(line), ('JAM', source))
+        for apostrophe in ("'", '’', '&#39;'):
+            event = parse_ewar(f"(combat) You{apostrophe}re jammed by Pilot-With-Hyphen - Ladar ECM II")
+            self.assertEqual(event.source, 'Pilot-With-Hyphen')
+
+    def test_jam_requires_confirmed_personal_combat_event(self):
+        for line in ("(notify) Target lock unsuccessful.",
+                     "(notify) Interference from the warp you are doing is preventing your sensors from getting a target lock on Target.",
+                     "(notify) Your ship sensors are still tuning in on subspace frequencies.",
+                     "(combat) You're no longer jammed by Pirate - Ladar ECM II",
+                     "(combat) You jammed Target - Ladar ECM II",
+                     "(combat) Other Pilot is jammed by Pirate - Ladar ECM II",
+                     "(combat) You're jammed by - Ladar ECM II",
+                     "(combat) You're jammed by Pirate - ",
+                     "(combat) You're jammed by you - Ladar ECM II",
+                     "(notify) You're jammed by Pirate - Ladar ECM II",
+                     "Pilot > (combat) You're jammed by Pirate - Ladar ECM II"):
+            self.assertIsNone(parse_ewar(line), line)
+
     def test_scram_and_point_have_distinct_types(self):
         for action, expected in (("scramble", "SCRAM"), ("disruption", "POINT")):
             self.assertEqual(parse_incoming_ewar(f"(combat) Warp {action} attempt from Pilot [ABC](Loki) to you!"),
@@ -115,7 +143,7 @@ class AudioTests(unittest.TestCase):
     def test_stale_queue_is_discarded(self):
         played = []
         audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: 100)
-        audio.pending.extend([(90, 'SCRAM', 'Voice', 'Robot', 'Low (100%)', False), (99, 'WEB', 'Voice', 'Robot', 'Low (100%)', False)])
+        audio.pending.extend([(84, 'SCRAM', 'Voice', 'Robot', 'Low (100%)', False), (99, 'WEB', 'Voice', 'Robot', 'Low (100%)', False)])
         audio._drain()
         self.assertEqual(played, [('WEB', 'Voice', 'Robot', 'Low (100%)')])
 
@@ -154,12 +182,12 @@ class AudioTests(unittest.TestCase):
         self.assertEqual(played, [('WEB','Beep'), ('SCRAM','Voice'), ('POINT','Voice'),
                                  ('WEB','Voice'), ('POINT','Beep'), ('SCRAM','Beep')])
 
-    def test_nearby_off_beep_mode_and_jam_placeholder(self):
+    def test_nearby_off_beep_mode_and_unknown_effect(self):
         played = []
         audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: 100)
         with patch('ewar_alerts.threading.Thread'):
             self.assertFalse(audio.notify('WEB', 'Off', nearby=True))
-            self.assertFalse(audio.notify('JAM', voice='SamL', nearby=True, preview=True))
+            self.assertFalse(audio.notify('UNKNOWN', voice='SamL', nearby=True, preview=True))
             self.assertTrue(audio.notify('WEB', 'Beep'))
             self.assertTrue(audio.notify('WEB', 'Beep', nearby=True))
         audio._drain()
@@ -284,16 +312,39 @@ class AudioTests(unittest.TestCase):
         self.assertEqual(load.call_args.args[1],3)
         self.assertEqual(sound.PlaySound.call_args.args[0],b'robot-wav')
 
-    def test_saml_jam_is_preview_only_and_other_styles_cannot_play_it(self):
+    def test_jam_is_live_for_every_voice_and_repeat_limited(self):
         played=[]
         audio=AlertAudio('.',player=lambda *args: played.append(args),clock=lambda:100)
+        for voice in VOICE_FOLDERS:
+            audio.clear()
+            with patch('ewar_alerts.threading.Thread'):
+                self.assertTrue(audio.notify('JAM',voice=voice,volume='High (300%)'))
+                self.assertFalse(audio.notify('JAM',voice=voice,volume='High (300%)'))
+            audio._drain()
+        self.assertEqual(played,[('JAM','Voice',v,'High (300%)') for v in VOICE_FOLDERS])
+
+    def test_four_live_full_length_clips_do_not_expire_before_jam(self):
+        now = [100]
+        played = []
+        def play(kind, *args):
+            played.append(kind)
+            now[0] += 3.631
+        audio = AlertAudio('.', player=play, clock=lambda: now[0])
         with patch('ewar_alerts.threading.Thread'):
-            self.assertFalse(audio.notify('JAM',voice='SamL'))
-            self.assertFalse(audio.notify('JAM',voice='Robot',preview=True))
-            self.assertTrue(audio.notify('JAM',voice='SamL',volume='High (300%)',preview=True))
+            for kind in FILES:
+                self.assertTrue(audio.notify(kind, voice='SamL'))
+        now[0] += 3.631  # A previous clip is just finishing.
         audio._drain()
-        self.assertEqual(played,[('JAM','Voice','SamL','High (300%)')])
-        self.assertIsNone(parse_incoming_ewar('(notify) You are jammed!'))
+        self.assertEqual(played, ['SCRAM', 'POINT', 'WEB', 'JAM'])
+
+    def test_jam_uses_correct_waveform_for_every_voice_and_volume(self):
+        audio = AlertAudio(harness.APP/'assets')
+        with patch('ewar_alerts.winsound') as sound:
+            for voice, folder in VOICE_FOLDERS.items():
+                original = (harness.APP/'assets'/folder/'jammed.wav').read_bytes()
+                for volume, gain in VOLUME_GAINS.items():
+                    audio._play('JAM', 'Voice', voice, volume)
+                    self.assertEqual(sound.PlaySound.call_args.args[0], amplify_wav(original, gain))
 
     def test_saml_preview_plays_full_clip_with_gain(self):
         original=(harness.APP/'assets/voices/saml/jammed.wav').read_bytes()
@@ -361,9 +412,7 @@ class UISettingsTests(unittest.TestCase):
     def test_sound_setting_and_preview_buttons(self):
         with patch.object(ratting._ALERT_AUDIO, 'notify') as notify:
             for kind, button in self.settings._audio_test_buttons.items():
-                if kind == 'JAM':
-                    self.assertEqual(str(button.cget('state')),'disabled')
-                    continue
+                self.assertEqual(str(button.cget('state')),'normal')
                 button.invoke()
                 notify.assert_called_with(kind, 'Voice', preview=True, voice='Robot', volume='Low (100%)')
         self.settings.audio_var.set('Off')
@@ -394,11 +443,10 @@ class UISettingsTests(unittest.TestCase):
         self.assertTrue(self.settings._ap.winfo_viewable())
         self.assertFalse(self.settings._ap_dirty)
 
-    def test_saml_selection_enables_placeholder_and_persists(self):
+    def test_saml_selection_persists_and_jam_stays_enabled_for_robot(self):
         self.settings.voice_var.set('SamL')
         self.settings.volume_var.set('Medium (200%)')
         self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'normal')
-        self.assertIn('preview only',self.settings._jam_preview_note.cget('text'))
         with patch.object(ratting._ALERT_AUDIO,'notify') as notify:
             self.settings._audio_test_buttons['JAM'].invoke()
             notify.assert_called_once_with('JAM','Voice',preview=True,voice='SamL',volume='Medium (200%)')
@@ -411,7 +459,51 @@ class UISettingsTests(unittest.TestCase):
         self.assertEqual(self.settings.voice_var.get(),'SamL')
         self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'normal')
         self.settings.voice_var.set('Robot')
-        self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'disabled')
+        self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'normal')
+
+    def test_real_jam_log_routes_hidden_audio_once_per_cooldown(self):
+        win = self.ui._windows['123']
+        self.ui.cfg.update(ewar_audio='Voice', ewar_voice='SamL', ewar_volume='High (300%)')
+        win._go()
+        self.ui._toggle_window('123')
+        now = [100]
+        played = []
+        audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: now[0])
+        path = self.case.folder/'20260922_120000_123.txt'
+        with patch.object(ratting, '_ALERT_AUDIO', audio), patch('ewar_alerts.threading.Thread'), \
+             patch.object(win, '_flash_alert', side_effect=win._ewar_sound) as flash:
+            with path.open('a', encoding='utf-8') as stream:
+                stream.write('\n'.join(JAM_LINES[:2])+'\n')
+            win._read_logs_once()
+            win._read_logs_once()
+            audio._drain()
+            self.assertEqual(len(played), 1)
+            now[0] += 167
+            with path.open('a', encoding='utf-8') as stream:
+                stream.write(JAM_LINES[2]+'\n')
+            win._read_logs_once()
+            audio._drain()
+            self.assertEqual(flash.call_count, 3)
+        self.assertEqual(played, [('JAM','Voice','SamL','High (300%)')]*2)
+        self.assertTrue(all(a[1] == 'JAM' and 'JAMMED by' in a[2] for a in win.data.alerts))
+        self.assertIn('Test Jammer B', win.data.alerts[-1][2])
+
+    def test_jam_obeys_beep_off_and_visual_warning_color(self):
+        win = self.ui._windows['123']
+        for mode, expected in (('Beep', [('JAM', 'Beep')]), ('Off', [])):
+            self.ui.cfg['ewar_audio'] = mode
+            played = []
+            audio = AlertAudio('.', player=lambda *args: played.append(args[:2]), clock=lambda: 100)
+            with patch.object(ratting, '_ALERT_AUDIO', audio), patch('ewar_alerts.threading.Thread'), \
+                 patch.object(win, '_flash_alert', side_effect=win._ewar_sound):
+                win._parse(JAM_LINES[0])
+                audio._drain()
+            self.assertEqual(played, expected)
+        win._update_alert_labels()
+        labels = [label for row in win._alert_frame.winfo_children() for label in row.winfo_children()
+                  if isinstance(label, ratting.tk.Label) and 'JAMMED' in str(label.cget('text'))]
+        self.assertTrue(labels)
+        self.assertTrue(all(label.cget('fg') == ratting.C_EWAR for label in labels))
 
     def test_log_reader_plays_nearby_beep_and_selected_personal_voice(self):
         win = self.ui._windows['123']

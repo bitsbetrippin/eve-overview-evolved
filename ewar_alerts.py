@@ -19,19 +19,18 @@ try:
 except ImportError:
     winsound = None
 
-LABELS = {"SCRAM": "SCRAMBLED", "POINT": "POINTED", "WEB": "WEBBED"}
-FILES = {"SCRAM": "scrambled.wav", "POINT": "pointed.wav", "WEB": "webbed.wav"}
+LABELS = {"SCRAM": "SCRAMBLED", "POINT": "POINTED", "WEB": "WEBBED", "JAM": "JAMMED"}
+FILES = {"SCRAM": "scrambled.wav", "POINT": "pointed.wav", "WEB": "webbed.wav", "JAM": "jammed.wav"}
 VOICE_FOLDERS = {"Robot": "", "Commanding": "voices/commanding",
                  "Dramatic": "voices/dramatic", "News anchor": "voices/news_anchor",
                  "SamL": "voices/saml"}
-# Packaged for manual preview only; no JAM log trigger until its format is verified.
-PREVIEW_CLIPS = {"SamL": {"JAM": "jammed.wav"}}
 VOLUME_GAINS = {"Low (100%)": 1.0, "Medium (200%)": 2.0, "High (300%)": 3.0}
 DEFAULT_VOICE = "Robot"
 DEFAULT_VOLUME = "Low (100%)"
 _PREFIX = r"^(?:\[\s*\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}\s*\]\s*)?"
 _TACKLE = re.compile(_PREFIX + r"\(combat\)\s+Warp (scramble|disruption) attempt from (.+?) to (.+?)[!.]?\s*$", re.I)
 _WEB = re.compile(_PREFIX + r"\(notify\)\s+(.+?) (?:has|have) started webifying (.+?)[!.]?\s*$", re.I)
+_JAM = re.compile(_PREFIX + r"\(combat\)\s+You['’]re jammed by (.+?)\s*$", re.I)
 
 
 @dataclass(frozen=True)
@@ -46,12 +45,21 @@ class EwarEvent:
 
 
 def voice_files(voice):
-    return {**FILES, **PREVIEW_CLIPS.get(voice, {})}
+    return dict(FILES)
 
 
 def parse_ewar(raw):
     """Read explicit recipients; only an exact 'you' means the log's pilot."""
     plain = " ".join(unescape(re.sub(r"<[^>]+>", "", raw)).split())
+    match = _JAM.search(plain)
+    if match:
+        # Confirmed log form: You're jammed by <ship/pilot> - - <ECM module>.
+        # Split from the right to preserve hyphens in the attacker's identity.
+        source, separator, module = match[1].rpartition(" - ")
+        source = source.removesuffix(" -").strip()
+        if separator and module.strip() and source and source.casefold() != "you":
+            return EwarEvent("JAM", source, "you")
+        return None
     match = _TACKLE.search(plain)
     if match:
         event = EwarEvent("SCRAM" if match[1].lower() == "scramble" else "POINT",
@@ -145,7 +153,7 @@ class AlertAudio:
         self.player = player or self._play
         self.clock = clock
         self.pending = deque(maxlen=4)
-        self.nearby_pending = deque(maxlen=3)
+        self.nearby_pending = deque(maxlen=4)
         self.last = {}
         self.lock = threading.Lock()
         self.worker = None
@@ -156,7 +164,7 @@ class AlertAudio:
         volume = volume if volume in VOLUME_GAINS else DEFAULT_VOLUME
         if mode not in ("Voice", "Beep"):
             return False
-        if kind not in FILES and not (preview and not nearby and kind in PREVIEW_CLIPS.get(voice, {})):
+        if kind not in FILES:
             return False
         if nearby:
             mode = "Beep"
@@ -186,11 +194,13 @@ class AlertAudio:
         while True:
             with self.lock:
                 pending = self.pending if self.pending else self.nearby_pending
+                expiry = 15 if self.pending else 8
                 if not pending:
                     self.worker = None
                     return
                 at, kind, mode, voice, volume, preview = pending.popleft()
-            if not preview and self.clock() - at > 8:
+            # Four full SamL clips can need almost 15 seconds to play in turn.
+            if not preview and self.clock() - at > expiry:
                 continue
             try:
                 self.player(kind, mode, voice, volume)

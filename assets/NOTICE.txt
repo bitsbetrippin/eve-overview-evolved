@@ -1,4 +1,4 @@
-ASSET SOURCES — Eve-Overlay-Evolved v0.7.5
+ASSET SOURCES — Eve-Overlay-Evolved v0.7.7
 
 initiative.png: The Initiative. [INIT.], alliance ID 1900696668.
 Unmodified 128px logo downloaded 2026-10-03 from CCP's official image service:
@@ -6,17 +6,17 @@ https://images.evetech.net/alliances/1900696668/logo?size=128
 EVE Online / CCP Games and the original alliance artwork creators retain their
 respective rights. This application is an independent community project.
 
-scrambled.wav, pointed.wav, webbed.wav: original synthetic speech generated for
+scrambled.wav, pointed.wav, webbed.wav, jammed.wav: original synthetic speech generated for
 this application with eSpeak NG 1.52.0, English voice, speed 145, pitch 30,
 then mild amplitude modulation using robotic_audio.py. Text: "You are scrambled.",
-"You are pointed.", "You are webbed." No human voice recordings or cloning.
+"You are pointed.", "You are webbed.", "You are jammed." No human voice recordings or cloning.
 Generator source: https://github.com/espeak-ng/espeak-ng/releases/tag/1.52.0
 The release distributes generated audio, not the eSpeak NG executable/data.
 
 voices/commanding, voices/dramatic, voices/news_anchor contain three additional
 original synthetic styles generated with eSpeak NG 1.52.0. Parameters and
 phrases are in generate_voice_styles.py. Voices: en-us+m1 (commanding),
-en-us+m3 (dramatic, with a pause), en-us+klatt (news anchor). Each has three
+en-us+m3 (dramatic, with a pause), en-us+klatt (news anchor). Each has four
 warnings. Levels are matched approximately to the original Robot's average
 amplitude; runtime applies the selected digital gain with soft peak limiting.
 No actor recordings, celebrity voice models or voice cloning were used.

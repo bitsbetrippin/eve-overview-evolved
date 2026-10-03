@@ -15,12 +15,12 @@ PROFILES = {
 }
 
 
-def generate(executable):
+def generate(executable, words=('scrambled', 'pointed', 'webbed', 'jammed')):
     executable = executable.resolve()
     for style, (voice, speed, pitch, phrase) in PROFILES.items():
         folder = ROOT / 'assets/voices' / style
         folder.mkdir(parents=True, exist_ok=True)
-        for word in ('scrambled', 'pointed', 'webbed'):
+        for word in words:
             path = folder / (word + '.wav')
             subprocess.run([str(executable), '--path='+str(executable.parent), '-v', voice,
                             '-s', str(speed), '-p', str(pitch), '-m', '-w', str(path),
@@ -44,4 +44,7 @@ def generate(executable):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--espeak', type=Path, required=True)
-    generate(parser.parse_args().espeak)
+    parser.add_argument('--words', nargs='+', choices=('scrambled', 'pointed', 'webbed', 'jammed'),
+                        default=('scrambled', 'pointed', 'webbed', 'jammed'))
+    args = parser.parse_args()
+    generate(args.espeak, args.words)

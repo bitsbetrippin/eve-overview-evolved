@@ -1,4 +1,4 @@
-# Neut log fixture
+# Combat log fixtures
 
 `incoming_neuts.txt` preserves the markup, amounts, event spacing and module
 names from a contributed incoming-neutralizer log sample. Pilot names,
@@ -21,3 +21,12 @@ The final 15-second window contains 32 GJ. Identical same-second lines are
 preserved: multiple module activations must not be deduplicated by text.
 Incoming Nos uses negative `GJ energy drained to` with the incoming color;
 gains via `drained from` and positive amounts are excluded.
+
+`incoming_jams.txt` preserves the three ECM combat records from a contributed
+log: two identical Kitsune events at the same second, then a Bellicose event
+167 seconds later. Dates, pilot names and corporation/alliance labels are
+anonymized; markup, ship names and the Ladar ECM II module are retained.
+The explicit `You're jammed by` text establishes the personal recipient.
+All three records parse, but the repeated same-second event shares the
+10-second audio cooldown. Generic targeting/warp/sensor failures are not jams.
+The sample does not establish a nearby or outgoing jamming log format.
