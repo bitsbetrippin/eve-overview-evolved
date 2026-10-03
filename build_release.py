@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent
 PYTHON_URL = "https://www.python.org/ftp/python/3.13.15/python-3.13.15-amd64.zip"
 PYTHON_SHA256 = "6479223746cdfb79d25865110d6f524ac98de081324e119af1dc3ae36bddc7a5"
 APP_FILES = (
-    "START.bat", "Start Eve-Overlay-Evolved.cmd", "app_info.py", "startup.py", "ratting.py", "eve_paths.py", "combat_meter.py", "window_placement.py", "neut_meter.py",
+    "START.bat", "Start Eve-Overlay-Evolved.cmd", "app_info.py", "startup.py", "ratting.py", "eve_paths.py", "combat_meter.py", "window_placement.py", "neut_meter.py", "ewar_alerts.py",
     "PVE.ico", "README.md", "HOW_TO.txt", "START-HERE.txt", "RELEASE-NOTES.md",
     "THIRD-PARTY-NOTICES.txt", "ATTRIBUTION.md", "CHANGELOG.md",
     "CONTRIBUTING.md", "SECURITY.md", "CODE_OF_CONDUCT.md",
@@ -54,6 +54,7 @@ def build(output, cache, wheel_dir=None):
         source.extractall(stage / "runtime")
     for name in APP_FILES:
         shutil.copy2(ROOT / name, stage / name)
+    shutil.copytree(ROOT / "assets", stage / "assets")
     for path in ROOT.glob("*.png"):
         shutil.copy2(path, stage / path.name)
     python = stage / "runtime/python.exe"
@@ -65,7 +66,7 @@ def build(output, cache, wheel_dir=None):
     ], check=True)
     subprocess.run([str(python), "-I", "-B", str(stage / "startup.py"), "--self-test"], check=True)
     # Validate real GUI construction with synthetic/empty data before packaging.
-    for test_file in ("test_release.py", "test_combat.py", "test_panels.py", "test_neuts.py"):
+    for test_file in ("test_release.py", "test_combat.py", "test_panels.py", "test_neuts.py", "test_ewar.py"):
         subprocess.run([str(python), "-I", "-B", str(ROOT / "tests" / test_file),
                         "--app", str(stage)], check=True)
     package = output / (RELEASE_NAME + ".zip")

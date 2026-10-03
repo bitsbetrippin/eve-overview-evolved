@@ -1,0 +1,13 @@
+# Optional developer tool. Uses eSpeak NG 1.52.0; only WAVs ship to end users.
+param([Parameter(Mandatory=$true)][string]$EspeakExe)
+$ErrorActionPreference = 'Stop'
+$assetDir = Join-Path $PSScriptRoot 'assets'
+New-Item -ItemType Directory -Force -Path $assetDir | Out-Null
+$synthPath = (Resolve-Path -LiteralPath $EspeakExe).Path
+foreach ($word in @('scrambled', 'pointed', 'webbed')) {
+    & $synthPath "--path=$(Split-Path $synthPath)" -v en -s 145 -p 30 -w (Join-Path $assetDir "$word.wav") "You are $word."
+    if ($LASTEXITCODE -ne 0) { throw "Speech generation failed: $word" }
+}
+# Mild amplitude modulation gives the synthetic voice a robotic radio texture.
+& (Join-Path $PSScriptRoot 'runtime/python.exe') (Join-Path $PSScriptRoot 'robotic_audio.py')
+if ($LASTEXITCODE -ne 0) { throw 'Audio processing failed' }

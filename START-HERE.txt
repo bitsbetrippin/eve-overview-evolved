@@ -1,6 +1,6 @@
-EVE-OVERLAY-EVOLVED v0.7.2
+EVE-OVERLAY-EVOLVED v0.7.3
 
-1. Extract All from Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip.
+1. Extract All from Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip.
 2. Open the extracted folder.
 3. Double-click START.bat.
 4. If only the fleet overview appears, click SHOW PANELS.
@@ -42,3 +42,11 @@ Read README.md for layout, architecture and build instructions.
 FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
 Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
 OVL controls the separate overlay. Start each pilot with Play first.
+
+ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.3)
+Settings > SHOW THE INITIATIVE LOGO > APPLY enables the bundled INIT. logo.
+Settings > EWAR SOUND chooses Voice / Beep / Off. Use TEST buttons to preview.
+Voice announces You are scrambled / pointed / webbed for incoming log events.
+Run tracking with Play; enable Background Monitoring when hiding dashboards.
+Same-type audio repeats at most every 10 seconds fleet-wide. Clips are queued,
+not mixed together. These are log-event warnings, not continuous tackle status.

@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.7.2
+# Eve-Overlay-Evolved v0.7.3
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.7.2`.
+**Release tag:** `v0.7.3`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,16 +36,25 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.7.2
+## What's new in v0.7.3
 
-- Live **TARGET DPS** values now appear beside each character in the fleet overview.
-- Uses the same latest-hit target and rolling 15-second calculation as the dashboard,
-  refreshed every 500 ms, even before the first bounty payout.
-- PAUSED, STOPPED, OFFLINE and NO TICK labels distinguish inactive/stale data.
-- **OVL** keeps the separate overlay toggle and right-click menu.
-- Background Monitoring defaults on for new settings. Existing preferences remain;
-  enable it before hiding dashboards to keep the fleet DPS values live.
-- Older narrow overview windows expand to fit the new column.
+- Optional **The Initiative. [INIT.]** alliance logo beside dashboard target DPS
+  and above the fleet table. Enable **SHOW THE INITIATIVE LOGO** in Settings.
+- Offline robotic voice clips say **You are scrambled**, **You are pointed**,
+  or **You are webbed**. Choose **Voice / Beep / Off** and use the three TEST
+  buttons to preview before applying. Voice is the default; the logo defaults off.
+- EWAR parsing now requires incoming events directed **to you**. Outgoing
+  tackle and nearby ships/drones no longer cause false personal warnings.
+- Different effects play sequentially. Repeats of the same type are limited to
+  once every 10 seconds across the fleet; obsolete queued clips expire after 8 seconds.
+- Background Monitoring changes now apply immediately to hidden dashboards.
+
+These are warnings from newly read English log messages, not a persistent tackle
+status display: scramble/disruption **attempts** do not prove that an effect remains
+active or when it ends. Paused/stopped sessions do not read new events. Hidden
+dashboards require Background Monitoring. The visual alert names the affected
+character's attacker; voice clips do not identify the character in a multibox fleet.
+The logo and WAVs are bundled; no first-run download or speech engine is needed.
 
 ## Interface layout
 
@@ -54,10 +63,11 @@ target DPS, net ISK, ISK/hour, session time and the detached DPS-overlay toggle.
 header provides Settings, Fleet Manager, clipboard lock and Quit. Hover
 the application title for contributor and upstream credits. **SHOW PANELS**
 beside ACTIVE RATTING FLEET brings dashboards back next to the overview.
+Enable the optional INIT. logo and choose EWAR sound in Settings, then Apply.
 Click a character row to show/hide that pilot's dashboard; the OVL column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.7.2](overview-v0.7.2.png)
+![Fleet overview in v0.7.3](overview-v0.7.3.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
@@ -72,7 +82,7 @@ Each **character dashboard** is arranged from top to bottom:
 | ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
 | Missions or anomalies | Mission progress or site timing, counts and averages |
 
-![Character dashboard with sample combat data](dashboard-v0.7.1.png)
+![Character dashboard with sample combat data](dashboard-v0.7.3.png)
 
 *Preview uses synthetic combat data. The meter panels stay aqua/red/amber
 across themes. Other panels follow the selected theme.*
@@ -188,6 +198,8 @@ flowchart TD
 | `ratting.py` | Tkinter windows, log tailing/rotation, session state, themes, alerts and price workers |
 | `combat_meter.py` | Damage-line normalization, bounded named rolling totals, expiry and incoming ranking |
 | `neut_meter.py` | Incoming neutralizer/Nos parsing, separate and combined totals, source ranking and GJ/sec |
+| `ewar_alerts.py` | Incoming-only tackle/web parsing and serialized, throttled voice/beep playback |
+| `assets/` | Initiative logo, robotic WAV warnings and source notices |
 | `eve_paths.py` | Redirected Documents, OneDrive, standard Documents and Linux/Proton path candidates |
 | `window_placement.py` | Monitor work areas, reachable title checks and dashboard recovery |
 | `build_release.py` | Verifies/stages Python, installs pinned wheels, tests and builds the versioned ZIP |
@@ -196,6 +208,7 @@ flowchart TD
 | `tests/test_combat.py` | Parsing, attribution, rolling totals, log-to-widget updates and character panels |
 | `tests/test_panels.py` | Multiple-pilot startup, row clicks, hidden/collapsed recovery and monitor geometry |
 | `tests/test_neuts.py` | Anonymized neut/Nos replay, sign/direction checks, totals/rates, duplicate records, UI and history |
+| `tests/test_ewar.py` | EWAR direction, sound queue, WAV integrity and live logo/settings checks |
 
 The UI uses Tk's event loop. File notifications and timer polling drive
 incremental log reading; market lookups run in background threads. Named
@@ -229,7 +242,7 @@ All app state is stored beside `ratting.py`:
 The `ratting_*` filenames and `ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app, extract v0.7.2 into a new folder, and copy
+To upgrade, close the old app, extract v0.7.3 into a new folder, and copy
 `ratting_config.json` and `ratting_history.json` into it before launching.
 The caches may also be copied. Do not overwrite the new runtime/source
 with files from the old release.
@@ -247,7 +260,7 @@ python ratting.py
 Keep the helper modules beside `ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.7.2 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.7.3 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -261,8 +274,8 @@ hash-pinned wheels, runs a runtime self-test and all four regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.7.2-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -282,7 +295,7 @@ runtime\python.exe -I -B tests\test_neuts.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.7.2` tag; the portable ZIP is the downloadable release
+belongs to the `v0.7.3` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -301,7 +314,7 @@ asset, distinct from GitHub's source-only ZIP.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 63 automated checks and clean-extraction startup without
+Validation covers 75 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
 previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.
@@ -309,3 +322,18 @@ market-price services are not integration-tested.
 See [HOW_TO.txt](HOW_TO.txt) and [CONTRIBUTING.md](CONTRIBUTING.md) for more.
 Report bugs in [this project's issue tracker](https://github.com/bitsbetrippin/eve-overview-evolved/issues).
 Bundled notices are in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+
+### Alliance branding and voice assets
+
+`ewar_alerts.py` owns incoming EWAR parsing and one bounded audio queue shared
+by the fleet. `ratting.py` supplies per-character visual alerts and persisted
+`initiative_logo` / `ewar_audio` settings. Logo changes apply live to all windows.
+`assets/` contains the official alliance PNG, three generated WAVs and source notices.
+`build_release.py` copies that directory; startup verifies that the assets exist.
+`tests/test_ewar.py` covers direction, all alert types, queue behavior, WAV integrity,
+and actual Tk settings/logo/log-reader integration. The suite brings the total to 75.
+
+To regenerate the voice clips as a developer, use `generate_alert_audio.ps1
+-EspeakExe C:/path/to/espeak-ng.exe` with eSpeak NG 1.52.0 and its data directory.
+`robotic_audio.py` applies a mild radio texture. Neither synthesizer nor generator
+is required for normal use. Asset credits and sources are in `assets/NOTICE.txt`.

@@ -25,3 +25,5 @@ pyperclip 1.11.0: https://pypi.org/project/pyperclip/1.11.0/
 pystray 0.19.5: https://pypi.org/project/pystray/0.19.5/
 watchdog 6.0.0: https://pypi.org/project/watchdog/6.0.0/
 six 1.17.0: https://pypi.org/project/six/1.17.0/
+
+Alliance logo and synthesized voice asset credits: see assets/NOTICE.txt.

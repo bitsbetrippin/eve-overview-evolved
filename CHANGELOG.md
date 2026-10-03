@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.7.3 — 2026-10-03
+
+- Optional Initiative alliance logo beside target DPS and above the fleet table.
+- Bundled robotic voice warnings for scrambled, pointed and webbed events.
+- Voice/Beep/Off settings with previews, serialized playback and repeat throttling.
+- Fix false personal scram alerts from nearby/outgoing tackle; add point parsing.
+- Apply background monitoring changes immediately to hidden dashboards.
+- Twelve new automated checks for EWAR, audio and live settings (75 total).
+
 ## v0.7.2 — 2026-09-23
 
 - Add a live per-character TARGET DPS column to the fleet overview (15-second window).

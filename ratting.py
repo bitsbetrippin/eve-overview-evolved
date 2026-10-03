@@ -23,6 +23,7 @@ import os, re, json, time, threading, urllib.request, traceback
 from datetime import datetime, timedelta, timezone
 from collections import deque
 from combat_meter import CombatMeter, parse_damage
+from ewar_alerts import AlertAudio, LABELS as EWAR_LABELS, parse_incoming_ewar
 from neut_meter import CapDrainMeter, parse_incoming_cap_drain, source_label, format_gj
 from window_placement import move_near, recover_if_offscreen, title_visible, rectangle, work_areas
 from app_info import APP_NAME, APP_TITLE, VERSION, REPOSITORY_URL, CREDITS
@@ -88,14 +89,6 @@ except ImportError:
     # stub le fichier ne serait même pas importable quand watchdog manque.
     class FileSystemEventHandler:
         pass
-
-# Bips d'alerte EWAR. winsound est dans la stdlib mais uniquement sous Windows :
-# le try préserve la compatibilité Linux/Proton, où l'app tourne aussi.
-try:
-    import winsound
-    _SND_OK = True
-except ImportError:
-    _SND_OK = False
 
 # ── Palette ──────────────────────────────────────────────────────────
 # Volontairement très sombre : l'app se pose par-dessus EVE, et un fond clair
@@ -443,28 +436,6 @@ RE_DREAD    = re.compile(r'\(notify\)\s+(.*?)\s*Dreadnought detected',          
 # Escalade : le site vient de se prolonger ailleurs, avec une fenêtre de temps
 # limitée pour la suivre. Facile à manquer dans le flot du journal.
 RE_ESCAL    = re.compile(r'A portion of the\s+(.*?)\s+database reveals the potential location', re.I)
-
-# ── Motifs EWAR (scram / web) ────────────────────────────────────────
-# Les deux événements qui empêchent de FUIR : sans warp, un joueur distrait
-# perd son vaisseau. C'est la seule catégorie d'alerte doublée d'un bip sonore.
-# Groupe 1 = attaquant en HTML, groupe 2 = attaquant en texte brut.
-RE_SCRAM = re.compile(
-    r'\(combat\)\s*(?:<[^>]+>)*(?:<b>)?Warp\s+scramble\s+attempt(?:</b>)?'
-    r'.*?<b>(?:<[^>]+>)?([\w\s\'-]+)</b>'
-    r'|\(combat\)\s+Warp\s+scramble\s+attempt\s+from\s+([\w\s\'-]+?)\s+to\s+you',
-    re.I
-)
-# Le web arrive dans le GAMELOG, en ligne (notify), comme tous les autres
-# événements de ce type. Il était autrefois cherché dans les chatlogs, où il ne
-# pouvait structurellement jamais correspondre : une ligne de chat s'écrit
-# « [ horodatage ] Locuteur > message » et ne porte aucune balise (notify).
-# La variante balisée est tolérée par symétrie avec RE_SCRAM — seule la forme
-# brute a été observée dans de vrais gamelogs, les balises sont une assurance.
-RE_WEB = re.compile(
-    r'\(notify\)\s*(?:<[^>]+>)*(?:<b>)?([\w\s\'-]+?)(?:</b>)?(?:<[^>]+>)*'
-    r'\s+has\s+started\s+webifying\s+you',
-    re.I
-)
 
 # ── Fonctions utilitaires ────────────────────────────────────────────
 # Le client peut colorer ses lignes de journal en HTML ; on ne garde que le
@@ -905,6 +876,35 @@ def _get_resource_path(relative_path):
 
 # ── Session data model ───────────────────────────────────────────────
 # Conteneur de données de session (DPS, ISK, kills, anomalies, missions)
+
+_ALERT_AUDIO = AlertAudio(_get_resource_path("assets"))
+
+
+def _initiative_badge(parent, cfg, size, bg):
+    badge = tk.Label(parent, bg=bg, bd=0, padx=0, pady=0)
+    try:
+        image = tk.PhotoImage(master=parent, file=_get_resource_path("assets/initiative.png"))
+        badge.image = image.subsample(max(1, image.width() // size))
+        badge.configure(image=badge.image)
+    except (tk.TclError, OSError):
+        badge.configure(text="INIT.", fg=T1, font=("Consolas", 8, "bold"))
+    Tooltip(badge, "The Initiative. [INIT.] — alliance logo")
+    if cfg.get("initiative_logo", False):
+        badge.pack(side="left", padx=(0, 6))
+    return badge
+
+
+def _show_initiative_badge(badge, enabled):
+    if enabled:
+        others = [w for w in badge.master.pack_slaves() if w != badge]
+        options = dict(side="left", padx=(0, 6))
+        if others:
+            options["before"] = others[0]
+        badge.pack(**options)
+    else:
+        badge.pack_forget()
+
+
 class Data:
 
     # Initialise et réinitialise les données
@@ -2363,24 +2363,11 @@ class CharacterWindow:
     # non la fenêtre : scram et web sont précisément les événements qu'il ne
     # faut pas rater. Joué dans un thread parce que winsound.Beep BLOQUE le
     # temps du bip — sur le thread UI, l'app se figerait à chaque alerte.
-    def _ewar_sound(self):
-        if not _SND_OK:
-            return
-        def _beep():
-            try:
-                winsound.Beep(1200, 130)
-                winsound.Beep(1650, 160)
-            except Exception:
-                _log_exc("CharacterWindow._ewar_sound._beep:1866")
-        try:
-            threading.Thread(target=_beep, daemon=True).start()
-        except Exception:
-            _log_exc("CharacterWindow._ewar_sound:1870")
+    def _ewar_sound(self, kind):
+        _ALERT_AUDIO.notify(kind, self.cfg.get("ewar_audio", "Voice"))
 
-    # Complément visuel du bip, pour le joueur qui coupe le son ou joue en
-    # musique. Le clignotement attire l'œil là où l'alerte vient de s'écrire.
-    def _flash_alert(self):
-        self._ewar_sound()
+    def _flash_alert(self, kind):
+        self._ewar_sound(kind)
 
         # Quick pulse flash on the alert frame for EWAR
         def _pulse(step=0):
@@ -2905,8 +2892,11 @@ class CharacterWindow:
         label(heading, "TARGET DPS", aqua, self._meter_name_font).pack(side="left")
         self._meter_status = label(heading, "PRESS PLAY", aqua, ("Consolas", 8, "bold"))
         self._meter_status.pack(side="right")
-        self._target_dps_label = label(panel, "0 DPS", aqua, self._meter_dps_font, width=1)
-        self._target_dps_label.pack(fill="x", padx=7)
+        self._target_dps_row = tk.Frame(panel, bg=BG_P)
+        self._target_dps_row.pack(fill="x", padx=7)
+        self._initiative_badge = _initiative_badge(self._target_dps_row, self.cfg, 64, BG_P)
+        self._target_dps_label = label(self._target_dps_row, "0 DPS", aqua, self._meter_dps_font, width=1)
+        self._target_dps_label.pack(side="left", fill="x", expand=True)
         self._target_name_label = label(panel, "No recent target", aqua, self._meter_name_font, width=1)
         self._target_name_label.pack(fill="x", padx=7)
         tk.Label(panel, text=f"Last target hit / {DPS_W}s average", bg=BG_P, fg=T1,
@@ -3028,12 +3018,14 @@ class CharacterWindow:
         self._cset(self._meter_status, text=status)
         width = self._combat_container.winfo_width()
         width = (width if width > 1 else WIN_W - 16) - 14
+        dps_width = self._target_dps_label.winfo_width()
+        dps_width = max(30, dps_width - 8) if dps_width > 1 else width
         text = f"{snapshot['target_dps']:,.0f} DPS"
-        if getattr(self, "_meter_size_key", None) != (text, width):
+        if getattr(self, "_meter_size_key", None) != (text, dps_width):
             self._meter_dps_font.configure(size=24)
-            while self._meter_dps_font.measure(text) > width and self._meter_dps_font.cget("size") > 10:
+            while self._meter_dps_font.measure(text) > dps_width and self._meter_dps_font.cget("size") > 10:
                 self._meter_dps_font.configure(size=self._meter_dps_font.cget("size") - 1)
-            self._meter_size_key = (text, width)
+            self._meter_size_key = (text, dps_width)
         self._cset(self._target_dps_label, text=text)
         name = snapshot["target"] or "No recent target"
         self._cset(self._target_name_label, text=self._meter_ellipsis(name, self._meter_name_font, max(25, width - 4)))
@@ -4128,7 +4120,7 @@ class CharacterWindow:
                 for ts_str, atype, text in alerts:
                     if atype in ("DANGER", "FACTION"):
                         ac = C_ALERT
-                    elif atype in ("SCRAM", "WEB"):
+                    elif atype in ("SCRAM", "POINT", "WEB"):
                         ac = C_EWAR
                     elif atype == "ESCAL":
                         ac = C_ESCAL
@@ -4361,25 +4353,11 @@ class CharacterWindow:
             d.alerts.append((now_str, "ESCAL", f"\u272A ESCALATION: {m.group(1).strip()}"))
             return
 
-        # EWAR — le scram arrive en ligne (combat). Groupe 1 = variante HTML,
-        # groupe 2 = variante texte brut.
-        m = RE_SCRAM.search(raw)
-        if m:
-            npc = shtml((m.group(1) or m.group(2)).strip())
-            d.alerts.append((now_str, "SCRAM", f"\u26D4 SCRAMBLED by {npc}!"))
-            self._flash_alert()
-            return
-
-        # EWAR — le web arrive en ligne (notify) dans ce même gamelog. Il était
-        # autrefois cherché dans les chatlogs, qui ne portent jamais de balise
-        # « (notify) » : les alertes WEB ne pouvaient donc jamais se déclencher.
-        # (« (notify) » figure déjà dans le filtre rapide ci-dessus, ces lignes
-        # parviennent donc bien jusqu'ici.)
-        m = RE_WEB.search(raw)
-        if m:
-            npc = shtml(m.group(1).strip())
-            d.alerts.append((now_str, "WEB", f"\u26A0 WEBBED by {npc}!"))
-            self._flash_alert()
+        event = parse_incoming_ewar(raw)
+        if event:
+            kind, source = event
+            d.alerts.append((now_str, kind, f"⚠ {EWAR_LABELS[kind]} by {source}!"))
+            self._flash_alert(kind)
             return
 
     # ── Boucle de lecture des logs ───────────────────────────────────────
@@ -5102,10 +5080,10 @@ class MainUISettings:
 
         saved = cfg.get("main_ui", {}).get("settings_pos", "")
         if saved:
-            self.w.geometry(f"340x320{saved}")
+            self.w.geometry(f"360x455{saved}")
         else:
             self.w.geometry(
-                f"340x320+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
+                f"360x455+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
 
         hdr = tk.Frame(self.w, bg=BG_H, height=32)
         hdr.pack(fill="x")
@@ -5200,6 +5178,29 @@ class MainUISettings:
         self._bgm_box.bind("<Button-1>", _toggle_bgm)
         bgm_lbl.bind("<Button-1>", _toggle_bgm)
 
+        self.logo_var = tk.BooleanVar(value=cfg.get("initiative_logo", False))
+        self._logo_check = tk.Checkbutton(
+            body, text="SHOW THE INITIATIVE LOGO", variable=self.logo_var,
+            font=lf, bg=BG_POP, fg=TD, selectcolor=BG_C,
+            activebackground=BG_POP, activeforeground=T0, command=self._check_dirty)
+        self._logo_check.pack(anchor="w", pady=(0, 6))
+        audio_row = tk.Frame(body, bg=BG_POP)
+        audio_row.pack(fill="x", pady=(0, 6))
+        tk.Label(audio_row, text="EWAR SOUND", font=lf, bg=BG_POP, fg=TD).pack(side="left")
+        self.audio_var = tk.StringVar(value=cfg.get("ewar_audio", "Voice"))
+        ttk.Combobox(audio_row, textvariable=self.audio_var, state="readonly",
+                     values=("Voice", "Beep", "Off"), width=10, style="E.TCombobox").pack(side="right")
+        preview_row = tk.Frame(body, bg=BG_POP)
+        preview_row.pack(fill="x", pady=(0, 7))
+        tk.Label(preview_row, text="TEST", font=lf, bg=BG_POP, fg=TD).pack(side="left")
+        self._audio_test_buttons = {}
+        for kind, word in (("SCRAM", "Scrambled"), ("POINT", "Pointed"), ("WEB", "Webbed")):
+            button = tk.Button(preview_row, text=word, font=("Consolas", 8),
+                               bg=BG_H, fg=T0, relief="flat",
+                               command=lambda k=kind: _ALERT_AUDIO.notify(k, self.audio_var.get(), preview=True))
+            button.pack(side="left", padx=2)
+            self._audio_test_buttons[kind] = button
+
         # Photographie des valeurs à l'ouverture : c'est la référence qui permet de
         # savoir s'il reste quelque chose à appliquer.
         self._snap = {
@@ -5210,6 +5211,8 @@ class MainUISettings:
             "gap":   self.gv.get(),
             "theme": self._theme_var.get(),
             "bgm":   self.bgm_var.get(),
+            "logo":  self.logo_var.get(),
+            "audio": self.audio_var.get(),
         }
 
         ap_font = tkfont.Font(family="Consolas", size=10, weight="bold")
@@ -5219,7 +5222,7 @@ class MainUISettings:
         self._ap_dirty = False
 
         # Trace StringVars so any keystroke updates dirty state
-        for var in (self.pv, self.av, self.tv, self.iv, self.gv, self._theme_var):
+        for var in (self.pv, self.av, self.tv, self.iv, self.gv, self._theme_var, self.audio_var):
             var.trace_add("write", lambda *_: self._check_dirty())
 
     # Comparé à l'instantané pris à l'ouverture plutôt qu'à la config : le
@@ -5233,7 +5236,9 @@ class MainUISettings:
             self.iv.get()          != self._snap["poll"]  or
             self.gv.get()          != self._snap["gap"]   or
             self._theme_var.get()  != self._snap["theme"] or
-            self.bgm_var.get()     != self._snap["bgm"]
+            self.bgm_var.get()     != self._snap["bgm"] or
+            self.logo_var.get()    != self._snap["logo"] or
+            self.audio_var.get()   != self._snap["audio"]
         )
         if dirty == self._ap_dirty:
             return
@@ -5387,6 +5392,17 @@ class MainUISettings:
                         _log_exc("MainUISettings._apply:4254")
 
         cfg["bg_monitor"] = self.bgm_var.get()
+        cfg["initiative_logo"] = self.logo_var.get()
+        if cfg.get("ewar_audio", "Voice") != self.audio_var.get():
+            _ALERT_AUDIO.clear()
+        cfg["ewar_audio"] = self.audio_var.get()
+        _show_initiative_badge(mu._initiative_badge, self.logo_var.get())
+        for win in mu._windows.values():
+            _show_initiative_badge(win._initiative_badge, self.logo_var.get())
+            win._meter_size_key = None
+            win._fit()
+            if not win.root.winfo_viewable():
+                win._suspended = not (self.bgm_var.get() or getattr(win, "_overlay_active", False))
 
         save_config(cfg)
 
@@ -5399,6 +5415,8 @@ class MainUISettings:
             "gap":   self.gv.get(),
             "theme": self._theme_var.get(),
             "bgm":   self.bgm_var.get(),
+            "logo":  self.logo_var.get(),
+            "audio": self.audio_var.get(),
         }
         self._check_dirty()
 
@@ -5992,6 +6010,7 @@ class MainUI:
 
         hdr2 = tk.Frame(body, bg=BG)
         hdr2.pack(fill="x", pady=(0, 3))
+        self._initiative_badge = _initiative_badge(hdr2, self.cfg, 32, BG)
         tk.Label(hdr2, text="ACTIVE RATTING FLEET",
                  font=F8B, bg=BG, fg=T0).pack(side="left")
         self._show_panels_button = tk.Button(
@@ -6811,6 +6830,7 @@ class MainUI:
     # archivant sa session au passage. Détruire d'abord ferait se déclencher les
     # boucles sur des widgets disparus.
     def _quit(self):
+        _ALERT_AUDIO.clear()
         if self._health_job:
             self.root.after_cancel(self._health_job)
             self._health_job = None
