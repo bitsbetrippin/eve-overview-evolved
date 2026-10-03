@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.6 — 2026-10-03
+
+- Beep for scram/point/web events targeting another pilot, drone or outgoing target in the monitored log.
+- Keep selected-voice alerts and personal visual warnings exclusive to events targeting the log's character (`you`).
+- Give personal alerts priority over queued nearby beeps, with independent repeat limits.
+- Preserve Beep-only and Off settings, volume gain and the preview-only Jammed placeholder.
+- Explain sound routing in Settings; add ten regression checks (98 total).
+
 ## v0.7.5 — 2026-10-03
 
 - Add SamL voice selection with four supplied recordings converted to 16-bit mono WAVs.

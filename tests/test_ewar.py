@@ -14,7 +14,7 @@ from pathlib import Path
 # Reuse the isolated, synthetic fleet harness and its --app argument handling.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import test_panels as harness
-from ewar_alerts import (AlertAudio, FILES, parse_incoming_ewar, amplify_wav, beep_wav,
+from ewar_alerts import (AlertAudio, FILES, parse_incoming_ewar, parse_ewar, amplify_wav, beep_wav,
                          VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME, voice_files)
 ratting = harness.ratting
 
@@ -29,7 +29,7 @@ class ParserTests(unittest.TestCase):
         line = '(combat) <color=0xffffffff><b>Warp scramble attempt</b> <font size=10>from</font> <b>Renée &amp; Co.[ABC]</b> <font size=10>to <b></font>you!'
         self.assertEqual(parse_incoming_ewar(line), ('SCRAM', 'Renée & Co.[ABC]'))
 
-    def test_nearby_outgoing_and_drone_tackle_do_not_alert(self):
+    def test_nearby_outgoing_and_drone_tackle_are_not_personal(self):
         for target in ('Target Pilot', "'Augmented' Warrior", 'younger Pilot'):
             for action in ('scramble', 'disruption'):
                 self.assertIsNone(parse_incoming_ewar(f'(combat) <b>Warp {action} attempt</b> from <b>Guardian Agent</b> to <b>{target}</b>'))
@@ -44,6 +44,34 @@ class ParserTests(unittest.TestCase):
                      '(combat) 500 from Pirate - Gun - Hits', '(notify) Warp scramble attempt failed',
                      'Pilot > Warp scramble attempt from Pirate to you!'):
             self.assertIsNone(parse_incoming_ewar(line))
+
+    def test_explicit_recipients_include_other_pilots_drones_and_outgoing(self):
+        for source in ('Pirate', 'you'):
+            for target in ('Target Pilot', "\'Augmented\' Warrior", 'younger Pilot', 'Your ship'):
+                for action, kind in (('scramble', 'SCRAM'), ('disruption', 'POINT')):
+                    line = f'[ 2026.10.03 12:00:00 ] (combat) <b>Warp {action} attempt</b> from <b>{source}</b> to <b>{target}</b>!'
+                    event = parse_ewar(line)
+                    self.assertEqual((event.kind, event.source, event.target), (kind, source, target))
+                    self.assertFalse(event.incoming)
+
+    def test_web_recipients_and_html_are_preserved(self):
+        for source, verb in (('Renée &amp; Co.', 'has'), ('You', 'have')):
+            event = parse_ewar(f'(notify) <b>{source}</b> {verb} started webifying <b>Other Pilot</b>.')
+            self.assertEqual((event.kind, event.target, event.incoming), ('WEB', 'Other Pilot', False))
+        event = parse_ewar('(notify) Pirate has started webifying YOU!')
+        self.assertTrue(event.incoming)
+        self.assertEqual(event.target, 'YOU')
+
+    def test_missing_recipients_and_unrelated_messages_are_ignored(self):
+        for line in ('(combat) Warp scramble attempt from Pirate to ',
+                     '(combat) Warp disruption attempt from Pirate to !',
+                     '(notify) Pirate has started webifying ',
+                     '(notify) Pirate has stopped webifying Other Pilot.',
+                     'Pilot > (combat) Warp scramble attempt from Pirate to you!',
+                     '(combat) 500 from Pirate - Gun - Hits',
+                     '(notify) You are jammed!',
+                     '(combat) Warp scramble attempt from you to you!'):
+            self.assertIsNone(parse_ewar(line), line)
 
 
 class AudioTests(unittest.TestCase):
@@ -90,6 +118,85 @@ class AudioTests(unittest.TestCase):
         audio.pending.extend([(90, 'SCRAM', 'Voice', 'Robot', 'Low (100%)', False), (99, 'WEB', 'Voice', 'Robot', 'Low (100%)', False)])
         audio._drain()
         self.assertEqual(played, [('WEB', 'Voice', 'Robot', 'Low (100%)')])
+
+    def test_nearby_forces_beep_and_never_uses_or_blocks_personal_voice(self):
+        played = []
+        audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: 100)
+        with patch('ewar_alerts.threading.Thread'):
+            self.assertTrue(audio.notify('SCRAM', voice='SamL', volume='High (300%)', nearby=True))
+            self.assertTrue(audio.notify('SCRAM', voice='SamL', volume='High (300%)'))
+            self.assertFalse(audio.notify('SCRAM', nearby=True))
+            self.assertFalse(audio.notify('SCRAM'))
+        audio._drain()
+        self.assertEqual(played, [('SCRAM', 'Voice', 'SamL', 'High (300%)'),
+                                 ('SCRAM', 'Beep', 'SamL', 'High (300%)')])
+
+    def test_personal_queue_takes_priority_during_nearby_playback(self):
+        entered, release = threading.Event(), threading.Event()
+        played = []
+        def play(*args):
+            played.append(args[:2])
+            entered.set()
+            release.wait(3)
+        audio = AlertAudio('.', player=play, clock=lambda: 100)
+        self.addCleanup(release.set)
+        audio.notify('WEB', nearby=True)
+        self.assertTrue(entered.wait(2))
+        worker = audio.worker
+        audio.notify('POINT', nearby=True)
+        audio.notify('SCRAM', nearby=True)
+        audio.notify('SCRAM', voice='SamL')
+        audio.notify('POINT', voice='SamL')
+        audio.notify('WEB', voice='SamL')
+        release.set()
+        worker.join(3)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(played, [('WEB','Beep'), ('SCRAM','Voice'), ('POINT','Voice'),
+                                 ('WEB','Voice'), ('POINT','Beep'), ('SCRAM','Beep')])
+
+    def test_nearby_off_beep_mode_and_jam_placeholder(self):
+        played = []
+        audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: 100)
+        with patch('ewar_alerts.threading.Thread'):
+            self.assertFalse(audio.notify('WEB', 'Off', nearby=True))
+            self.assertFalse(audio.notify('JAM', voice='SamL', nearby=True, preview=True))
+            self.assertTrue(audio.notify('WEB', 'Beep'))
+            self.assertTrue(audio.notify('WEB', 'Beep', nearby=True))
+        audio._drain()
+        self.assertEqual([a[:2] for a in played], [('WEB','Beep'), ('WEB','Beep')])
+
+    def test_nearby_expiry_and_clear(self):
+        now = [100]
+        played = []
+        audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: now[0])
+        with patch('ewar_alerts.threading.Thread'):
+            audio.notify('WEB', nearby=True)
+            now[0] = 109
+            audio.notify('POINT')
+        audio._drain()
+        self.assertEqual([a[:2] for a in played], [('POINT', 'Voice')])
+        with patch('ewar_alerts.threading.Thread'):
+            audio.notify('SCRAM', nearby=True)
+            audio.notify('SCRAM')
+            audio.clear()
+            self.assertFalse(audio.pending)
+            self.assertFalse(audio.nearby_pending)
+            self.assertFalse(audio.last)
+
+    def test_nearby_and_personal_cooldowns_expire_independently(self):
+        now = [100]
+        audio = AlertAudio('.', player=lambda *_: None, clock=lambda: now[0])
+        with patch('ewar_alerts.threading.Thread'):
+            self.assertTrue(audio.notify('POINT', nearby=True))
+            audio.nearby_pending.clear()
+            now[0] = 105
+            self.assertTrue(audio.notify('POINT'))
+            audio.pending.clear()
+            now[0] = 110
+            self.assertTrue(audio.notify('POINT', nearby=True))
+            self.assertFalse(audio.notify('POINT'))
+            now[0] = 115
+            self.assertTrue(audio.notify('POINT'))
 
     def test_bundled_wavs_are_short_audible_pcm(self):
         for path in (harness.APP/'assets'/folder/name for voice,folder in VOICE_FOLDERS.items() for name in voice_files(voice).values()):
@@ -306,7 +413,38 @@ class UISettingsTests(unittest.TestCase):
         self.settings.voice_var.set('Robot')
         self.assertEqual(str(self.settings._audio_test_buttons['JAM'].cget('state')),'disabled')
 
-    def test_hidden_log_events_route_only_incoming_audio(self):
+    def test_log_reader_plays_nearby_beep_and_selected_personal_voice(self):
+        win = self.ui._windows['123']
+        self.ui.cfg.update(ewar_audio='Voice', ewar_voice='SamL', ewar_volume='Medium (200%)')
+        win._go()
+        played = []
+        audio = AlertAudio('.', player=lambda *args: played.append(args), clock=lambda: 100)
+        with (self.case.folder/'20260922_120000_123.txt').open('a', encoding='utf-8') as stream:
+            stream.write('(combat) Warp scramble attempt from Pirate to Drone!\n'
+                         '(combat) Warp scramble attempt from Pirate to you!\n')
+        with patch.object(ratting, '_ALERT_AUDIO', audio), patch('ewar_alerts.threading.Thread'), \
+             patch.object(win, '_flash_alert', side_effect=win._ewar_sound):
+            win._read_logs_once()
+            win._read_logs_once()
+        audio._drain()
+        self.assertEqual(played, [('SCRAM', 'Voice', 'SamL', 'Medium (200%)'),
+                                 ('SCRAM', 'Beep', 'SamL', 'Medium (200%)')])
+        self.assertEqual([a[1] for a in win.data.alerts], ['SCRAM'])
+
+    def test_log_routing_respects_beep_only_and_mute_settings(self):
+        win = self.ui._windows['123']
+        for mode, expected in (('Beep', [('WEB', 'Beep'), ('WEB', 'Beep')]), ('Off', [])):
+            self.ui.cfg.update(ewar_audio=mode, ewar_voice='SamL')
+            played = []
+            audio = AlertAudio('.', player=lambda *args: played.append(args[:2]), clock=lambda: 100)
+            with patch.object(ratting, '_ALERT_AUDIO', audio), patch('ewar_alerts.threading.Thread'), \
+                 patch.object(win, '_flash_alert', side_effect=win._ewar_sound):
+                win._parse('(notify) Pirate has started webifying Other Pilot.')
+                win._parse('(notify) Pirate has started webifying you.')
+            audio._drain()
+            self.assertEqual(played, expected)
+
+    def test_hidden_log_events_route_by_recipient_without_false_personal_alerts(self):
         win = self.ui._windows['123']
         self.ui.cfg.update(ewar_voice='SamL',ewar_volume='Medium (200%)')
         win._go()
@@ -314,15 +452,25 @@ class UISettingsTests(unittest.TestCase):
         lines = ['(combat) Warp scramble attempt from Pirate to you!',
                  '(combat) Warp disruption attempt from Pirate to you!',
                  '(notify) Pirate has started webifying you',
-                 '(combat) <b>Warp scramble attempt</b> from <b>Pirate</b> to <b>Someone Else</b>']
+                 '(combat) <b>Warp scramble attempt</b> from <b>Pirate</b> to <b>Someone Else</b>',
+                 '(combat) Warp disruption attempt from Pirate to Drone!',
+                 '(notify) Pirate has started webifying Someone Else.',
+                 '(combat) Warp scramble attempt from you to Pirate!']
         with (self.case.folder/'20260922_120000_123.txt').open('a', encoding='utf-8') as stream:
             stream.write('\n'.join(lines)+'\n')
-        with patch.object(ratting._ALERT_AUDIO, 'notify') as notify, patch.object(win, '_flash_alert', wraps=win._flash_alert):
+        with patch.object(ratting._ALERT_AUDIO, 'notify') as notify, patch.object(win, '_flash_alert', wraps=win._flash_alert) as flash:
             win._read_logs_once()
-            self.assertEqual([c.args for c in notify.call_args_list], [('SCRAM','Voice'),('POINT','Voice'),('WEB','Voice')])
-            self.assertTrue(all(c.kwargs==dict(voice='SamL',volume='Medium (200%)') for c in notify.call_args_list))
+            self.assertEqual([c.args for c in notify.call_args_list],
+                             [('SCRAM','Voice'),('POINT','Voice'),('WEB','Voice'),
+                              ('SCRAM','Voice'),('POINT','Voice'),('WEB','Voice'),('SCRAM','Voice')])
+            for i, call in enumerate(notify.call_args_list):
+                expected = dict(voice='SamL', volume='Medium (200%)')
+                if i >= 3:
+                    expected['nearby'] = True
+                self.assertEqual(call.kwargs, expected)
+            self.assertEqual(flash.call_count, 3)
             win._read_logs_once()
-            self.assertEqual(notify.call_count, 3)
+            self.assertEqual(notify.call_count, 7)
         self.assertEqual([a[1] for a in win.data.alerts], ['SCRAM','POINT','WEB'])
         self.ui.root.update()
         # Let the short visual pulses finish before destroying the window.

@@ -1,29 +1,28 @@
-# Eve-Overlay-Evolved v0.7.5
+# Eve-Overlay-Evolved v0.7.6
 
-Extract **Eve-Overlay-Evolved-v0.7.5-Windows-x64.zip** and run **START.bat**.
+Extract **Eve-Overlay-Evolved-v0.7.6-Windows-x64.zip** and run **START.bat**.
 
-Settings > EWAR SOUND: **Voice** > VOICE STYLE: **SamL** > **APPLY**.
-SamL includes four user-supplied clips, converted from MP3 to 16-bit mono WAV:
+In **Settings > EWAR SOUND: Voice**, scram, point and web events targeting
+your character play your selected voice. Events targeting another pilot,
+drone or your own outgoing EWAR target play a beep when present in the log.
+Only personal events produce the personal EWAR visual warning.
 
-- Scrambled, Pointed, Webbed: use the existing automatic incoming-event triggers.
-- **Jammed: placeholder only.** Its TEST button works with SamL selected;
-  automatic ECM-jamming detection is deferred until a later release.
+Personal alerts play before queued nearby beeps, and nearby activity cannot
+consume their repeat limit. Each effect repeats at most once every 10 seconds
+per personal/nearby group across the fleet. Live queued events expire after
+8 seconds; an already playing clip finishes before the next starts.
 
-All clips retain their full duration (about 3.5–3.6 seconds). Originals remain
-unchanged. Low/Medium/High (100%/200%/300%) gain applies to previews and alerts.
-Selections persist. Robot / Low remain the defaults; no other voices are replaced.
-The four previews play sequentially without live-alert expiry. Live alerts keep
-the 8-second queue expiry and 10-second repeat limit per effect across the fleet.
-
-Voice files live in assets/voices/saml. The logo and all 16 audio files are
-bundled for offline use. No MP3 decoder or speech engine is needed to run.
+Beep mode beeps for both groups; Off mutes both. Saved voice and volume choices
+are preserved. Low/Medium/High (100%/200%/300%) gain works for both sounds.
+SamL and all other voice styles remain available. Jammed stays preview-only.
+Only recognized English gamelog events can trigger alerts.
 
 Upgrade: close the old app, extract into a new folder, then copy
 ratting_config.json and ratting_history.json before launching.
 
-Validation: 88 automated checks, including imported-clip checksums and duration,
-SamL routing, Jammed preview-only behavior, saved settings and portable startup.
-Live EVE gameplay and perceived speaker loudness have not been tested.
+Validation: 98 automated checks, including recipient routing, independent
+cooldowns, queue priority, mute/Beep settings and clean portable startup.
+Live EVE gameplay has not been tested.
 
 Contributions: @bitsbetrippin. Original concept/base: Eve-Ratting by @psychojf.
 Repository: https://github.com/bitsbetrippin/eve-overview-evolved

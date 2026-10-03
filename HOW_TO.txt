@@ -1,5 +1,5 @@
 ================================================================
- EVE-OVERLAY-EVOLVED v0.7.5 — HOW TO USE
+ EVE-OVERLAY-EVOLVED v0.7.6 — HOW TO USE
 ================================================================
 
 A passive desktop dashboard for EVE Online PvE pilots. It reads
@@ -42,11 +42,11 @@ It does NOT touch the EVE client, network traffic or memory.
   needs is in the gamelog.
 
 ----------------------------------------------------------------
- 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.5
+ 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.6
 ----------------------------------------------------------------
 
   PORTABLE RELEASE:
-    Download Eve-Overlay-Evolved-v0.7.5-Windows-x64.zip.
+    Download Eve-Overlay-Evolved-v0.7.6-Windows-x64.zip.
     Right-click it, choose Extract All, then open the extracted
     folder and double-click START.bat. Keep all files together.
 
@@ -62,7 +62,7 @@ It does NOT touch the EVE client, network traffic or memory.
     including OneDrive and redirected folders. Saved custom log
     paths are preserved; change them in Settings if needed.
 
-  INCOMING CAPACITOR DRAIN (v0.7.5):
+  INCOMING CAPACITOR DRAIN (v0.7.6):
     The amber INCOMING CAP DRAIN panel sits below TOP INCOMING DAMAGE.
     It combines neutralizer and Nosferatu loss in its session GJ and GJ/sec.
     Separate NEUT/NOS subtotals and top-source hover details show the split.
@@ -746,22 +746,24 @@ FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
 Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
 OVL controls the separate overlay. Start each pilot with Play first.
 
-ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.5)
+ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.6)
 Settings > SHOW THE INITIATIVE LOGO > APPLY enables the bundled INIT. logo.
 Settings > EWAR SOUND chooses Voice / Beep / Off. Use TEST buttons to preview.
-Voice announces You are scrambled / pointed / webbed for incoming log events.
+Voice uses your selected clip when you are scrambled / pointed / webbed.
+Other targets (including drones and your outgoing EWAR) use a beep if logged.
+Beep mode beeps for both groups; Off mutes both. Personal alerts play first.
 Run tracking with Play; enable Background Monitoring when hiding dashboards.
-Same-type audio repeats at most every 10 seconds fleet-wide. Clips are queued,
+Each effect repeats at most every 10 seconds per personal/nearby group, fleet-wide. Clips are queued,
 not mixed together. These are log-event warnings, not continuous tackle status.
 
-VOICE STYLE / ALERT VOLUME (v0.7.5)
-Settings > VOICE STYLE: Robot / Commanding / Dramatic / News anchor.
+VOICE STYLE / ALERT VOLUME (v0.7.6)
+Settings > VOICE STYLE: Robot / Commanding / Dramatic / News anchor / SamL.
 Settings > ALERT VOLUME: Low 100% / Medium 200% / High 300% digital gain.
 TEST previews the current selection; APPLY saves it for live alerts.
 Applies to Voice and Beep. Peaks are limited; Windows volume is unchanged.
 Original synthetic styles, not exact celebrity replicas. No runtime downloads.
 
-SAML VOICE (v0.7.5)
+SAML VOICE (v0.7.6)
 Settings > EWAR SOUND: Voice > VOICE STYLE: SamL > APPLY.
 Scrambled / Pointed / Webbed use the normal automatic incoming-event triggers.
 Jammed is included as a TEST preview only; automatic jam detection comes later.

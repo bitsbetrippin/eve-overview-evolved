@@ -23,7 +23,7 @@ import os, re, json, time, threading, urllib.request, traceback
 from datetime import datetime, timedelta, timezone
 from collections import deque
 from combat_meter import CombatMeter, parse_damage
-from ewar_alerts import (AlertAudio, LABELS as EWAR_LABELS, parse_incoming_ewar,
+from ewar_alerts import (AlertAudio, LABELS as EWAR_LABELS, parse_ewar,
                          VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME)
 from neut_meter import CapDrainMeter, parse_incoming_cap_drain, source_label, format_gj
 from window_placement import move_near, recover_if_offscreen, title_visible, rectangle, work_areas
@@ -4356,11 +4356,15 @@ class CharacterWindow:
             d.alerts.append((now_str, "ESCAL", f"\u272A ESCALATION: {m.group(1).strip()}"))
             return
 
-        event = parse_incoming_ewar(raw)
+        event = parse_ewar(raw)
         if event:
-            kind, source = event
-            d.alerts.append((now_str, kind, f"⚠ {EWAR_LABELS[kind]} by {source}!"))
-            self._flash_alert(kind)
+            if event.incoming:
+                d.alerts.append((now_str, event.kind, f"⚠ {EWAR_LABELS[event.kind]} by {event.source}!"))
+                self._flash_alert(event.kind)
+            else:
+                _ALERT_AUDIO.notify(event.kind, self.cfg.get("ewar_audio", "Voice"), nearby=True,
+                                    voice=self.cfg.get("ewar_voice", DEFAULT_VOICE),
+                                    volume=self.cfg.get("ewar_volume", DEFAULT_VOLUME))
             return
 
     # ── Boucle de lecture des logs ───────────────────────────────────────
@@ -5083,10 +5087,10 @@ class MainUISettings:
 
         saved = cfg.get("main_ui", {}).get("settings_pos", "")
         if saved:
-            self.w.geometry(f"380x515{saved}")
+            self.w.geometry(f"380x555{saved}")
         else:
             self.w.geometry(
-                f"380x515+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
+                f"380x555+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
 
         hdr = tk.Frame(self.w, bg=BG_H, height=32)
         hdr.pack(fill="x")
@@ -5193,6 +5197,8 @@ class MainUISettings:
         self.audio_var = tk.StringVar(value=cfg.get("ewar_audio", "Voice"))
         ttk.Combobox(audio_row, textvariable=self.audio_var, state="readonly",
                      values=("Voice", "Beep", "Off"), width=10, style="E.TCombobox").pack(side="right")
+        tk.Label(body, text="Voice: you = voice; other targets = beep.\nBeep: all beep. Off: all muted.",
+                 font=("Consolas", 8), bg=BG_POP, fg=TD, justify="left").pack(anchor="w", pady=(0, 6))
         voice = cfg.get("ewar_voice", DEFAULT_VOICE)
         volume = cfg.get("ewar_volume", DEFAULT_VOLUME)
         self.voice_var = tk.StringVar(value=voice if voice in VOICE_FOLDERS else DEFAULT_VOICE)

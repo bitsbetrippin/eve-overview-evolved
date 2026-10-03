@@ -1,5 +1,6 @@
-"""Incoming-only English EWAR events and serialized, offline alert playback."""
+"""Recipient-aware English EWAR events and serialized, offline alert playback."""
 from collections import deque
+from dataclasses import dataclass
 from array import array
 from functools import lru_cache
 from html import unescape
@@ -28,26 +29,49 @@ PREVIEW_CLIPS = {"SamL": {"JAM": "jammed.wav"}}
 VOLUME_GAINS = {"Low (100%)": 1.0, "Medium (200%)": 2.0, "High (300%)": 3.0}
 DEFAULT_VOICE = "Robot"
 DEFAULT_VOLUME = "Low (100%)"
-_TACKLE = re.compile(r"\(combat\)\s+Warp (scramble|disruption) attempt from (.+?) to you[!.]?\s*$", re.I)
-_WEB = re.compile(r"\(notify\)\s+(.+?) has started webifying you[!.]?\s*$", re.I)
+_PREFIX = r"^(?:\[\s*\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}\s*\]\s*)?"
+_TACKLE = re.compile(_PREFIX + r"\(combat\)\s+Warp (scramble|disruption) attempt from (.+?) to (.+?)[!.]?\s*$", re.I)
+_WEB = re.compile(_PREFIX + r"\(notify\)\s+(.+?) (?:has|have) started webifying (.+?)[!.]?\s*$", re.I)
+
+
+@dataclass(frozen=True)
+class EwarEvent:
+    kind: str
+    source: str
+    target: str
+
+    @property
+    def incoming(self):
+        return self.target.casefold() == "you"
 
 
 def voice_files(voice):
     return {**FILES, **PREVIEW_CLIPS.get(voice, {})}
 
 
-def parse_incoming_ewar(raw):
-    """Require the recipient to be 'you', excluding outgoing and nearby tackle."""
+def parse_ewar(raw):
+    """Read explicit recipients; only an exact 'you' means the log's pilot."""
     plain = " ".join(unescape(re.sub(r"<[^>]+>", "", raw)).split())
     match = _TACKLE.search(plain)
     if match:
-        source = match[2].strip()
-        if source.casefold() != "you":
-            return ("SCRAM" if match[1].lower() == "scramble" else "POINT", source)
-    match = _WEB.search(plain)
-    if match and match[1].strip().casefold() != "you":
-        return "WEB", match[1].strip()
-    return None
+        event = EwarEvent("SCRAM" if match[1].lower() == "scramble" else "POINT",
+                          match[2].strip(), match[3].strip())
+    else:
+        match = _WEB.search(plain)
+        if not match:
+            return None
+        event = EwarEvent("WEB", match[1].strip(), match[2].strip())
+    if not event.source or not event.target or event.target in ("!", "."):
+        return None
+    if event.incoming and event.source.casefold() == "you":
+        return None
+    return event
+
+
+def parse_incoming_ewar(raw):
+    """Compatibility helper for personal-only consumers."""
+    event = parse_ewar(raw)
+    return (event.kind, event.source) if event and event.incoming else None
 
 
 def amplify_wav(data, gain):
@@ -109,36 +133,44 @@ def beep_wav(gain):
 
 
 class AlertAudio:
-    """One player for the fleet; coalesce each type for 10 seconds, never overlap.
+    """One player for the fleet; coalesce each type/scope for 10 seconds.
 
     Different effects remain separate queued clips. Old queued events expire so
-    a busy fleet cannot leave a backlog of obsolete warnings. No Tk calls here.
+    a busy fleet cannot leave a backlog of obsolete warnings. Personal alerts
+    play before queued nearby beeps, which never suppress personal alerts.
+    No Tk calls here.
     """
     def __init__(self, assets, player=None, clock=time.monotonic):
         self.assets = Path(assets)
         self.player = player or self._play
         self.clock = clock
         self.pending = deque(maxlen=4)
+        self.nearby_pending = deque(maxlen=3)
         self.last = {}
         self.lock = threading.Lock()
         self.worker = None
 
-    def notify(self, kind, mode="Voice", preview=False, *, voice=DEFAULT_VOICE, volume=DEFAULT_VOLUME):
+    def notify(self, kind, mode="Voice", preview=False, *, voice=DEFAULT_VOICE,
+               volume=DEFAULT_VOLUME, nearby=False):
         voice = voice if voice in VOICE_FOLDERS else DEFAULT_VOICE
         volume = volume if volume in VOLUME_GAINS else DEFAULT_VOLUME
         if mode not in ("Voice", "Beep"):
             return False
-        if kind not in FILES and not (preview and kind in PREVIEW_CLIPS.get(voice, {})):
+        if kind not in FILES and not (preview and not nearby and kind in PREVIEW_CLIPS.get(voice, {})):
             return False
+        if nearby:
+            mode = "Beep"
         with self.lock:
             now = self.clock()
-            if not preview and now - self.last.get(kind, -float("inf")) < 10:
+            key = (nearby, kind)
+            pending = self.nearby_pending if nearby else self.pending
+            if not preview and now - self.last.get(key, -float("inf")) < 10:
                 return False
-            if any(item[1] == kind for item in self.pending):
+            if any(item[1] == kind for item in pending):
                 return False
             if not preview:
-                self.last[kind] = now
-            self.pending.append((now, kind, mode, voice, volume, preview))
+                self.last[key] = now
+            pending.append((now, kind, mode, voice, volume, preview))
             if self.worker is None:
                 self.worker = threading.Thread(target=self._drain, daemon=True)
                 self.worker.start()
@@ -147,15 +179,17 @@ class AlertAudio:
     def clear(self):
         with self.lock:
             self.pending.clear()
+            self.nearby_pending.clear()
             self.last.clear()
 
     def _drain(self):
         while True:
             with self.lock:
-                if not self.pending:
+                pending = self.pending if self.pending else self.nearby_pending
+                if not pending:
                     self.worker = None
                     return
-                at, kind, mode, voice, volume, preview = self.pending.popleft()
+                at, kind, mode, voice, volume, preview = pending.popleft()
             if not preview and self.clock() - at > 8:
                 continue
             try:
