@@ -24,6 +24,13 @@ def prepare():
         if not (ROOT / name).is_file():
             raise FileNotFoundError(f"Missing {name}. Extract the entire portable release ZIP.")
 
+    from ewar_alerts import VOICE_FOLDERS, FILES
+    for folder in VOICE_FOLDERS.values():
+        for name in FILES.values():
+            path = ROOT / "assets" / folder / name
+            if not path.is_file():
+                raise FileNotFoundError(f"Missing {path.relative_to(ROOT)}. Extract the entire portable release ZIP.")
+
 
 def self_test():
     """Offline check; does not open EVE logs or read the clipboard."""

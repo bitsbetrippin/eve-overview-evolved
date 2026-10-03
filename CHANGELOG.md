@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.4 — 2026-10-03
+
+- Low/Medium/High digital gain (100%/200%/300%) with peak limiting for voice and beep.
+- Four offline synthetic styles: Robot, Commanding, Dramatic and News anchor.
+- Preview and persist voice/volume settings; preserve Robot/100% for existing users.
+- Queue captures the selected profile and settings changes discard pending clips.
+- Eight new automated checks cover gain, limiting, style routing and persistence (83 total).
+
 ## v0.7.3 — 2026-10-03
 
 - Optional Initiative alliance logo beside target DPS and above the fleet table.

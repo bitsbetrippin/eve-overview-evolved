@@ -23,7 +23,8 @@ import os, re, json, time, threading, urllib.request, traceback
 from datetime import datetime, timedelta, timezone
 from collections import deque
 from combat_meter import CombatMeter, parse_damage
-from ewar_alerts import AlertAudio, LABELS as EWAR_LABELS, parse_incoming_ewar
+from ewar_alerts import (AlertAudio, LABELS as EWAR_LABELS, parse_incoming_ewar,
+                         VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME)
 from neut_meter import CapDrainMeter, parse_incoming_cap_drain, source_label, format_gj
 from window_placement import move_near, recover_if_offscreen, title_visible, rectangle, work_areas
 from app_info import APP_NAME, APP_TITLE, VERSION, REPOSITORY_URL, CREDITS
@@ -2364,7 +2365,9 @@ class CharacterWindow:
     # faut pas rater. Joué dans un thread parce que winsound.Beep BLOQUE le
     # temps du bip — sur le thread UI, l'app se figerait à chaque alerte.
     def _ewar_sound(self, kind):
-        _ALERT_AUDIO.notify(kind, self.cfg.get("ewar_audio", "Voice"))
+        _ALERT_AUDIO.notify(kind, self.cfg.get("ewar_audio", "Voice"),
+                            voice=self.cfg.get("ewar_voice", DEFAULT_VOICE),
+                            volume=self.cfg.get("ewar_volume", DEFAULT_VOLUME))
 
     def _flash_alert(self, kind):
         self._ewar_sound(kind)
@@ -5080,10 +5083,10 @@ class MainUISettings:
 
         saved = cfg.get("main_ui", {}).get("settings_pos", "")
         if saved:
-            self.w.geometry(f"360x455{saved}")
+            self.w.geometry(f"380x515{saved}")
         else:
             self.w.geometry(
-                f"360x455+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
+                f"380x515+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
 
         hdr = tk.Frame(self.w, bg=BG_H, height=32)
         hdr.pack(fill="x")
@@ -5190,6 +5193,17 @@ class MainUISettings:
         self.audio_var = tk.StringVar(value=cfg.get("ewar_audio", "Voice"))
         ttk.Combobox(audio_row, textvariable=self.audio_var, state="readonly",
                      values=("Voice", "Beep", "Off"), width=10, style="E.TCombobox").pack(side="right")
+        voice = cfg.get("ewar_voice", DEFAULT_VOICE)
+        volume = cfg.get("ewar_volume", DEFAULT_VOLUME)
+        self.voice_var = tk.StringVar(value=voice if voice in VOICE_FOLDERS else DEFAULT_VOICE)
+        self.volume_var = tk.StringVar(value=volume if volume in VOLUME_GAINS else DEFAULT_VOLUME)
+        for title, variable, values in (("VOICE STYLE", self.voice_var, tuple(VOICE_FOLDERS)),
+                                        ("ALERT VOLUME", self.volume_var, tuple(VOLUME_GAINS))):
+            row = tk.Frame(body, bg=BG_POP)
+            row.pack(fill="x", pady=(0, 6))
+            tk.Label(row, text=title, font=lf, bg=BG_POP, fg=TD).pack(side="left")
+            ttk.Combobox(row, textvariable=variable, state="readonly", values=values,
+                         width=17, style="E.TCombobox").pack(side="right")
         preview_row = tk.Frame(body, bg=BG_POP)
         preview_row.pack(fill="x", pady=(0, 7))
         tk.Label(preview_row, text="TEST", font=lf, bg=BG_POP, fg=TD).pack(side="left")
@@ -5197,7 +5211,8 @@ class MainUISettings:
         for kind, word in (("SCRAM", "Scrambled"), ("POINT", "Pointed"), ("WEB", "Webbed")):
             button = tk.Button(preview_row, text=word, font=("Consolas", 8),
                                bg=BG_H, fg=T0, relief="flat",
-                               command=lambda k=kind: _ALERT_AUDIO.notify(k, self.audio_var.get(), preview=True))
+                               command=lambda k=kind: _ALERT_AUDIO.notify(k, self.audio_var.get(), preview=True,
+                                   voice=self.voice_var.get(), volume=self.volume_var.get()))
             button.pack(side="left", padx=2)
             self._audio_test_buttons[kind] = button
 
@@ -5213,6 +5228,8 @@ class MainUISettings:
             "bgm":   self.bgm_var.get(),
             "logo":  self.logo_var.get(),
             "audio": self.audio_var.get(),
+            "voice": self.voice_var.get(),
+            "volume": self.volume_var.get(),
         }
 
         ap_font = tkfont.Font(family="Consolas", size=10, weight="bold")
@@ -5222,7 +5239,7 @@ class MainUISettings:
         self._ap_dirty = False
 
         # Trace StringVars so any keystroke updates dirty state
-        for var in (self.pv, self.av, self.tv, self.iv, self.gv, self._theme_var, self.audio_var):
+        for var in (self.pv, self.av, self.tv, self.iv, self.gv, self._theme_var, self.audio_var, self.voice_var, self.volume_var):
             var.trace_add("write", lambda *_: self._check_dirty())
 
     # Comparé à l'instantané pris à l'ouverture plutôt qu'à la config : le
@@ -5238,7 +5255,9 @@ class MainUISettings:
             self._theme_var.get()  != self._snap["theme"] or
             self.bgm_var.get()     != self._snap["bgm"] or
             self.logo_var.get()    != self._snap["logo"] or
-            self.audio_var.get()   != self._snap["audio"]
+            self.audio_var.get()   != self._snap["audio"] or
+            self.voice_var.get()   != self._snap["voice"] or
+            self.volume_var.get()  != self._snap["volume"]
         )
         if dirty == self._ap_dirty:
             return
@@ -5393,9 +5412,13 @@ class MainUISettings:
 
         cfg["bg_monitor"] = self.bgm_var.get()
         cfg["initiative_logo"] = self.logo_var.get()
-        if cfg.get("ewar_audio", "Voice") != self.audio_var.get():
+        if (cfg.get("ewar_audio", "Voice") != self.audio_var.get() or
+                cfg.get("ewar_voice", DEFAULT_VOICE) != self.voice_var.get() or
+                cfg.get("ewar_volume", DEFAULT_VOLUME) != self.volume_var.get()):
             _ALERT_AUDIO.clear()
         cfg["ewar_audio"] = self.audio_var.get()
+        cfg["ewar_voice"] = self.voice_var.get()
+        cfg["ewar_volume"] = self.volume_var.get()
         _show_initiative_badge(mu._initiative_badge, self.logo_var.get())
         for win in mu._windows.values():
             _show_initiative_badge(win._initiative_badge, self.logo_var.get())
@@ -5417,6 +5440,8 @@ class MainUISettings:
             "bgm":   self.bgm_var.get(),
             "logo":  self.logo_var.get(),
             "audio": self.audio_var.get(),
+            "voice": self.voice_var.get(),
+            "volume": self.volume_var.get(),
         }
         self._check_dirty()
 

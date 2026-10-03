@@ -11,3 +11,5 @@ foreach ($word in @('scrambled', 'pointed', 'webbed')) {
 # Mild amplitude modulation gives the synthetic voice a robotic radio texture.
 & (Join-Path $PSScriptRoot 'runtime/python.exe') (Join-Path $PSScriptRoot 'robotic_audio.py')
 if ($LASTEXITCODE -ne 0) { throw 'Audio processing failed' }
+& (Join-Path $PSScriptRoot 'runtime/python.exe') (Join-Path $PSScriptRoot 'generate_voice_styles.py') --espeak $synthPath
+if ($LASTEXITCODE -ne 0) { throw 'Voice style generation failed' }

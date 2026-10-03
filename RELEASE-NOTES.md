@@ -1,29 +1,34 @@
-# Eve-Overlay-Evolved v0.7.3
+# Eve-Overlay-Evolved v0.7.4
 
-Download **Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip**, Extract All and run
-**START.bat**. Python, logo and voice clips are included for offline startup.
+Extract **Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip** and run **START.bat**.
+Python, the Initiative logo and all 12 voice clips are bundled.
 
-In Settings, enable **SHOW THE INITIATIVE LOGO** and click **APPLY**. The logo
-appears beside target DPS on dashboards and above the fleet overview table.
-**EWAR SOUND** offers Voice (default), Beep or Off. Test buttons preview each
-robotic warning: **You are scrambled / You are pointed / You are webbed**.
+In Settings, select **EWAR SOUND: Voice** and choose:
 
-Only incoming English log messages directed to you trigger personal alerts.
-Nearby ships, drones and outgoing tackle are excluded. Different warning types
-play in sequence; the same type repeats at most once every 10 seconds across
-the fleet. Queued clips older than 8 seconds are discarded. An in-progress clip
-may finish when sound is switched off. Voice does not announce pilot names.
+- **VOICE STYLE:** Robot, Commanding, Dramatic or News anchor.
+- **ALERT VOLUME:** Low (100%), Medium (200%) or High (300%).
 
-Press Play to track. Enable Background Monitoring to keep reading while panels
-are hidden. Pause/Stop halt new log reading. Warnings reflect logged attempts,
-not a guarantee of the effect's continued presence or a notification that it ended.
+Use Scrambled / Pointed / Webbed TEST buttons to preview your selection,
+then click APPLY. Both voice and beep obey the volume setting. Digital gain
+is 1x/2x/3x with soft limiting near full scale; actual speaker loudness depends
+on Windows volume and hardware. The app does not alter Windows master volume.
 
-Upgrade: close the old app, extract into a new folder, copy ratting_config.json
-and ratting_history.json, then launch. Logo defaults off; existing settings persist.
+The new voices are original synthetic styles, not exact celebrity replicas.
+Robot and Low (100%) remain the defaults. Settings persist across launches.
+Repeated effects are limited to once every 10 seconds across the fleet;
+different effects play sequentially. A clip already playing may finish after
+changing settings. Voice clips do not identify the affected character.
 
-Validation: 75 automated checks with synthetic logs and real Tk windows, WAV
-integrity, and clean portable startup without installed Python. Live EVE gameplay
-and the user's audio device have not been tested.
+Press Play to track; Background Monitoring keeps hidden dashboards tracking.
+Only incoming English log events directed to you trigger these warnings.
+Logged attempts are not continuous effect-state measurements or end alerts.
+
+Upgrade: close the old app, extract into a new folder, then copy
+ratting_config.json and ratting_history.json before launching.
+
+Validation: 83 automated checks, including PCM gain/limiting, all voice assets,
+queue routing, real Tk settings and clean START.bat launches. Live EVE gameplay
+and perceived speaker loudness have not been tested.
 
 Contributions: @bitsbetrippin. Original concept/base: Eve-Ratting by @psychojf.
 Repository: https://github.com/bitsbetrippin/eve-overview-evolved

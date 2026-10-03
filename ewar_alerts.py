@@ -1,11 +1,17 @@
 """Incoming-only English EWAR events and serialized, offline alert playback."""
 from collections import deque
+from array import array
+from functools import lru_cache
 from html import unescape
 from pathlib import Path
+import io
 import logging
+import math
 import re
+import sys
 import threading
 import time
+import wave
 
 try:
     import winsound
@@ -14,6 +20,11 @@ except ImportError:
 
 LABELS = {"SCRAM": "SCRAMBLED", "POINT": "POINTED", "WEB": "WEBBED"}
 FILES = {"SCRAM": "scrambled.wav", "POINT": "pointed.wav", "WEB": "webbed.wav"}
+VOICE_FOLDERS = {"Robot": "", "Commanding": "voices/commanding",
+                 "Dramatic": "voices/dramatic", "News anchor": "voices/news_anchor"}
+VOLUME_GAINS = {"Low (100%)": 1.0, "Medium (200%)": 2.0, "High (300%)": 3.0}
+DEFAULT_VOICE = "Robot"
+DEFAULT_VOLUME = "Low (100%)"
 _TACKLE = re.compile(r"\(combat\)\s+Warp (scramble|disruption) attempt from (.+?) to you[!.]?\s*$", re.I)
 _WEB = re.compile(r"\(notify\)\s+(.+?) has started webifying you[!.]?\s*$", re.I)
 
@@ -32,6 +43,64 @@ def parse_incoming_ewar(raw):
     return None
 
 
+def amplify_wav(data, gain):
+    """Boost 16-bit PCM with a soft limiter; 100% preserves the original bytes.
+
+    Digital gain cannot override the Windows mixer or speaker output limit.
+    Only peaks near full scale are limited, avoiding wraparound/hard clipping.
+    """
+    if not math.isfinite(gain) or not 1 <= gain <= 3:
+        raise ValueError("Alert gain must be between 1 and 3")
+    if gain == 1:
+        return data
+    with wave.open(io.BytesIO(data), "rb") as source:
+        params = source.getparams()
+        if params.sampwidth != 2 or params.comptype != "NONE":
+            raise ValueError("Alerts require uncompressed 16-bit PCM")
+        samples = array("h", source.readframes(params.nframes))
+    if sys.byteorder != "little":
+        samples.byteswap()
+    knee = 0.85 * 32767
+    headroom = 32767 - knee
+    for i, sample in enumerate(samples):
+        value = sample * gain
+        peak = abs(value)
+        if peak > knee:
+            peak = knee + headroom * (1 - math.exp(-(peak - knee) / headroom))
+        samples[i] = round(math.copysign(peak, value))
+    if sys.byteorder != "little":
+        samples.byteswap()
+    output = io.BytesIO()
+    with wave.open(output, "wb") as target:
+        target.setparams(params)
+        target.writeframes(samples.tobytes())
+    return output.getvalue()
+
+
+@lru_cache(maxsize=48)
+def voice_wav(path, gain):
+    return amplify_wav(Path(path).read_bytes(), gain)
+
+
+@lru_cache(maxsize=3)
+def beep_wav(gain):
+    """PCM replacement for Beep so all alert modes honor the chosen gain."""
+    rate = 22050
+    samples = array("h")
+    for frequency, duration in ((1200, .13), (1650, .16)):
+        count = int(rate * duration)
+        for i in range(count):
+            fade = min(1, i / (rate * .005), (count - 1 - i) / (rate * .005))
+            samples.append(round(4000 * fade * math.sin(2 * math.pi * frequency * i / rate)))
+    if sys.byteorder != "little":
+        samples.byteswap()
+    output = io.BytesIO()
+    with wave.open(output, "wb") as target:
+        target.setparams((1, 2, rate, len(samples), "NONE", "not compressed"))
+        target.writeframes(samples.tobytes())
+    return amplify_wav(output.getvalue(), gain)
+
+
 class AlertAudio:
     """One player for the fleet; coalesce each type for 10 seconds, never overlap.
 
@@ -47,9 +116,11 @@ class AlertAudio:
         self.lock = threading.Lock()
         self.worker = None
 
-    def notify(self, kind, mode="Voice", preview=False):
+    def notify(self, kind, mode="Voice", preview=False, *, voice=DEFAULT_VOICE, volume=DEFAULT_VOLUME):
         if kind not in FILES or mode not in ("Voice", "Beep"):
             return False
+        voice = voice if voice in VOICE_FOLDERS else DEFAULT_VOICE
+        volume = volume if volume in VOLUME_GAINS else DEFAULT_VOLUME
         with self.lock:
             now = self.clock()
             if not preview and now - self.last.get(kind, -float("inf")) < 10:
@@ -58,7 +129,7 @@ class AlertAudio:
                 return False
             if not preview:
                 self.last[kind] = now
-            self.pending.append((now, kind, mode))
+            self.pending.append((now, kind, mode, voice, volume))
             if self.worker is None:
                 self.worker = threading.Thread(target=self._drain, daemon=True)
                 self.worker.start()
@@ -75,23 +146,30 @@ class AlertAudio:
                 if not self.pending:
                     self.worker = None
                     return
-                at, kind, mode = self.pending.popleft()
+                at, kind, mode, voice, volume = self.pending.popleft()
             if self.clock() - at > 8:
                 continue
             try:
-                self.player(kind, mode)
+                self.player(kind, mode, voice, volume)
             except Exception:
                 logging.exception("Could not play EWAR alert")
 
-    def _play(self, kind, mode):
+    def _play(self, kind, mode, voice=DEFAULT_VOICE, volume=DEFAULT_VOLUME):
         if winsound is None:
             return
-        path = self.assets / FILES[kind]
-        if mode == "Voice" and path.is_file():
-            try:
-                winsound.PlaySound(str(path), winsound.SND_FILENAME | winsound.SND_NODEFAULT)
-                return
-            except RuntimeError:
-                logging.exception("Voice clip unavailable; falling back to beep")
-        winsound.Beep(1200, 130)
-        winsound.Beep(1650, 160)
+        gain = VOLUME_GAINS.get(volume, 1.0)
+        data = None
+        if mode == "Voice":
+            chosen = self.assets / VOICE_FOLDERS.get(voice, "") / FILES[kind]
+            fallback = self.assets / FILES[kind]
+            for path in dict.fromkeys((chosen, fallback)):
+                try:
+                    data = voice_wav(str(path), gain)
+                    break
+                except (OSError, ValueError, EOFError, wave.Error):
+                    logging.exception("Voice clip unavailable: %s", path)
+        if data is None:
+            data = beep_wav(gain)
+        # Synchronous playback in the worker keeps warnings separate. No mixer
+        # settings change, and no files or installed TTS engine are needed.
+        winsound.PlaySound(data, winsound.SND_MEMORY | winsound.SND_NODEFAULT)

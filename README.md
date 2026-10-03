@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.7.3
+# Eve-Overlay-Evolved v0.7.4
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.7.3`.
+**Release tag:** `v0.7.4`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,25 +36,26 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.7.3
+## What's new in v0.7.4
 
-- Optional **The Initiative. [INIT.]** alliance logo beside dashboard target DPS
-  and above the fleet table. Enable **SHOW THE INITIATIVE LOGO** in Settings.
-- Offline robotic voice clips say **You are scrambled**, **You are pointed**,
-  or **You are webbed**. Choose **Voice / Beep / Off** and use the three TEST
-  buttons to preview before applying. Voice is the default; the logo defaults off.
-- EWAR parsing now requires incoming events directed **to you**. Outgoing
-  tackle and nearby ships/drones no longer cause false personal warnings.
-- Different effects play sequentially. Repeats of the same type are limited to
-  once every 10 seconds across the fleet; obsolete queued clips expire after 8 seconds.
-- Background Monitoring changes now apply immediately to hidden dashboards.
+- **ALERT VOLUME** selector: **Low (100%)**, **Medium (200%)**, **High (300%)**.
+  These are 1x, 2x and 3x digital gain for both voice and beep alerts. A soft
+  peak limiter prevents overload; Windows/app mixer volume and speaker output
+  still determine the actual loudness. Windows master volume is unchanged.
+- **VOICE STYLE** selector: **Robot**, **Commanding**, **Dramatic**, **News anchor**.
+  The three new styles are original synthetic voices with different timbre,
+  pacing and phrasing, not actor recordings or exact celebrity replicas.
+- TEST buttons preview the selected style and volume before applying. Apply
+  persists the choices and uses them for new alerts across the fleet.
+- Upgrades keep the original Robot voice at Low (100%) until changed. The
+  optional Initiative logo, incoming-only EWAR parser and repeat limit remain.
 
-These are warnings from newly read English log messages, not a persistent tackle
-status display: scramble/disruption **attempts** do not prove that an effect remains
-active or when it ends. Paused/stopped sessions do not read new events. Hidden
-dashboards require Background Monitoring. The visual alert names the affected
-character's attacker; voice clips do not identify the character in a multibox fleet.
-The logo and WAVs are bundled; no first-run download or speech engine is needed.
+The 12 voice WAVs are bundled for offline playback. Different effects play
+sequentially, with a 10-second repeat limit per effect across the fleet.
+Queued clips older than 8 seconds are discarded; an already-playing clip may
+finish after a settings change. Hidden dashboards require Background Monitoring.
+Alerts reflect incoming English log messages, including tackle attempts; they
+do not continuously measure tackle status or announce when an effect ends.
 
 ## Interface layout
 
@@ -67,7 +68,7 @@ Enable the optional INIT. logo and choose EWAR sound in Settings, then Apply.
 Click a character row to show/hide that pilot's dashboard; the OVL column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.7.3](overview-v0.7.3.png)
+![Fleet overview in v0.7.4](overview-v0.7.4.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
@@ -82,7 +83,7 @@ Each **character dashboard** is arranged from top to bottom:
 | ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
 | Missions or anomalies | Mission progress or site timing, counts and averages |
 
-![Character dashboard with sample combat data](dashboard-v0.7.3.png)
+![Character dashboard with sample combat data](dashboard-v0.7.4.png)
 
 *Preview uses synthetic combat data. The meter panels stay aqua/red/amber
 across themes. Other panels follow the selected theme.*
@@ -198,7 +199,7 @@ flowchart TD
 | `ratting.py` | Tkinter windows, log tailing/rotation, session state, themes, alerts and price workers |
 | `combat_meter.py` | Damage-line normalization, bounded named rolling totals, expiry and incoming ranking |
 | `neut_meter.py` | Incoming neutralizer/Nos parsing, separate and combined totals, source ranking and GJ/sec |
-| `ewar_alerts.py` | Incoming-only tackle/web parsing and serialized, throttled voice/beep playback |
+| `ewar_alerts.py` | Incoming-only tackle/web parsing and serialized voice/beep playback, style selection and limited PCM gain |
 | `assets/` | Initiative logo, robotic WAV warnings and source notices |
 | `eve_paths.py` | Redirected Documents, OneDrive, standard Documents and Linux/Proton path candidates |
 | `window_placement.py` | Monitor work areas, reachable title checks and dashboard recovery |
@@ -208,7 +209,7 @@ flowchart TD
 | `tests/test_combat.py` | Parsing, attribution, rolling totals, log-to-widget updates and character panels |
 | `tests/test_panels.py` | Multiple-pilot startup, row clicks, hidden/collapsed recovery and monitor geometry |
 | `tests/test_neuts.py` | Anonymized neut/Nos replay, sign/direction checks, totals/rates, duplicate records, UI and history |
-| `tests/test_ewar.py` | EWAR direction, sound queue, WAV integrity and live logo/settings checks |
+| `tests/test_ewar.py` | EWAR direction, sound queue, styles/gain, WAV integrity and live logo/settings checks |
 
 The UI uses Tk's event loop. File notifications and timer polling drive
 incremental log reading; market lookups run in background threads. Named
@@ -242,7 +243,7 @@ All app state is stored beside `ratting.py`:
 The `ratting_*` filenames and `ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app, extract v0.7.3 into a new folder, and copy
+To upgrade, close the old app, extract v0.7.4 into a new folder, and copy
 `ratting_config.json` and `ratting_history.json` into it before launching.
 The caches may also be copied. Do not overwrite the new runtime/source
 with files from the old release.
@@ -260,7 +261,7 @@ python ratting.py
 Keep the helper modules beside `ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.7.3 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.7.4 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -274,8 +275,8 @@ hash-pinned wheels, runs a runtime self-test and all four regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.7.3-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.7.4-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -295,7 +296,7 @@ runtime\python.exe -I -B tests\test_neuts.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.7.3` tag; the portable ZIP is the downloadable release
+belongs to the `v0.7.4` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -314,7 +315,7 @@ asset, distinct from GitHub's source-only ZIP.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 75 automated checks and clean-extraction startup without
+Validation covers 83 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
 previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.
@@ -327,13 +328,17 @@ Bundled notices are in [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
 
 `ewar_alerts.py` owns incoming EWAR parsing and one bounded audio queue shared
 by the fleet. `ratting.py` supplies per-character visual alerts and persisted
-`initiative_logo` / `ewar_audio` settings. Logo changes apply live to all windows.
-`assets/` contains the official alliance PNG, three generated WAVs and source notices.
+`initiative_logo`, `ewar_audio`, `ewar_voice` and `ewar_volume` settings. Logo changes apply live to all windows.
+`assets/` contains the official alliance PNG, 12 generated WAVs and source notices.
 `build_release.py` copies that directory; startup verifies that the assets exist.
 `tests/test_ewar.py` covers direction, all alert types, queue behavior, WAV integrity,
-and actual Tk settings/logo/log-reader integration. The suite brings the total to 75.
+and actual Tk settings/logo/log-reader integration. The suite brings the total to 83.
 
 To regenerate the voice clips as a developer, use `generate_alert_audio.ps1
 -EspeakExe C:/path/to/espeak-ng.exe` with eSpeak NG 1.52.0 and its data directory.
-`robotic_audio.py` applies a mild radio texture. Neither synthesizer nor generator
+`robotic_audio.py` applies a mild radio texture to Robot; `generate_voice_styles.py`
+generates the other three styles. eSpeak needs the en-us language and m1/m3/klatt
+voice variants to regenerate these. Neither synthesizer nor generator
 is required for normal use. Asset credits and sources are in `assets/NOTICE.txt`.
+
+![Voice and volume settings](settings-v0.7.4.png)
