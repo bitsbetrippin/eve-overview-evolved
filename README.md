@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.8.0 beta
+# Eve-Overlay-Evolved v0.8.1 beta
 
 **See the damage. Hear the threat. Review the fight.**
 
@@ -7,9 +7,11 @@ drain, spoken EWAR warnings and fleet income in one place. The new **Battle
 Review** remembers your engagements so you can compare peaks after the grid
 goes quiet.
 
+**v0.8.1 documentation update:** follow the illustrated SamL voice setup below.
+
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip** from the [release assets](https://github.com/bitsbetrippin/eve-overview-evolved/releases).
+1. Download **Eve-Overlay-Evolved-v0.8.1-Windows-x64.zip** from the [release assets](https://github.com/bitsbetrippin/eve-overview-evolved/releases).
 2. Choose **Extract All** into a fresh writable folder.
 3. Double-click **START.bat**.
 4. Select your characters and press **Play**. **SHOW PANELS** restores dashboards.
@@ -47,6 +49,28 @@ instantaneous burst. A peak is rolling damage or GJ over 15 seconds divided by
 extend a battle. Pause, Stop, Reset, Quit or suspended monitoring saves an active
 fight as **[partial]**. No old gamelog damage is imported on startup.
 
+## Quick setup: SamL voice at 300%
+
+The **fleet overview** is your main **Overlay Ratting Window**. Open Settings
+with the **gear icon in the upper-right corner**, highlighted below.
+
+<img src="docs/images/tutorial-open-settings-v0.8.1.png" width="760" alt="Overlay Ratting Window: a red box and arrow point to the Settings gear, just left of the close button.">
+
+In Settings, make sure **EWAR SOUND** is set to **Voice**, then follow the
+numbered highlights:
+
+1. **VOICE STYLE → SamL:** open the dropdown and choose **SamL**.
+2. **ALERT VOLUME → High (300%):** choose **High (300%)** for 3× normal alert gain.
+3. **APPLY:** click the green **✔ APPLY** button to save the selections for live alerts.
+
+<img src="docs/images/tutorial-saml-volume-v0.8.1.png" width="560" alt="Settings tutorial: 1 highlights the Voice Style dropdown set to SamL; 2 highlights Alert Volume set to High (300%); 3 highlights the Apply button.">
+
+Use the **TEST** buttons to preview Scrambled, Pointed, Webbed or Jammed with
+the selected voice and volume. Press **Play** on the character dashboard for
+live alerts; keep **Background Monitoring** enabled if you hide the dashboard.
+
+*Tutorial images are annotated from real app windows using synthetic pilot data.*
+
 ## Your cockpit at a glance
 
 | Feature | What you get |
@@ -76,7 +100,7 @@ combat history and bundled audio work locally.
 ## Folder layout and architecture
 
 ```text
-Eve-Overlay-Evolved-v0.8.0-Windows-x64/
+Eve-Overlay-Evolved-v0.8.1-Windows-x64/
 ├── START.bat          Launch the application
 ├── README.md          Quick start and feature guide
 ├── app/               UI, log readers and metric modules

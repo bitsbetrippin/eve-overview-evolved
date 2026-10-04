@@ -1,6 +1,6 @@
-EVE-OVERLAY-EVOLVED v0.8.0
+EVE-OVERLAY-EVOLVED v0.8.1
 
-1. Extract All from Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip.
+1. Extract All from Eve-Overlay-Evolved-v0.8.1-Windows-x64.zip.
 2. Open the extracted folder.
 3. Double-click START.bat.
 4. If only the fleet overview appears, click SHOW PANELS.
@@ -82,3 +82,7 @@ Settings > PURGE SAVED BATTLES clears all character archives after confirmation,
 keeping active fights, settings and income history. Pause/Stop/Reset/Quit save
 an active fight as [partial]. Cap drain, EWAR and misses alone do not start or
 extend fights. Old damage logs are not imported. See USER-GUIDE.md for details.
+
+SAM L / VOLUME SETUP PICTURES (v0.8.1)
+See README.md > Quick setup: SamL voice at 300% for the illustrated guide.
+Open the gear, set EWAR SOUND to Voice, choose SamL and High (300%), then APPLY.

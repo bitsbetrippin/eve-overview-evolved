@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.8.0
+# Eve-Overlay-Evolved v0.8.1
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.8.0`.
+**Release tag:** `v0.8.1`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.8.1-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,7 +36,15 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.8.0 beta
+## What's new in v0.8.1 beta
+
+This documentation update adds an illustrated README tutorial: find the Settings
+gear, select SamL, set High (300%) alert gain and click Apply. The red boxes,
+arrows and numbered steps use the real app layout. See the
+[SamL setup walkthrough](../README.md#quick-setup-saml-voice-at-300).
+Application behavior is unchanged from v0.8.0.
+
+## Battle features introduced in v0.8.0
 
 Battle Review adds local per-character battle history, independent outgoing
 and incoming selectors, EVE-time ranges, 15-second peak metrics and a Settings
@@ -348,7 +356,7 @@ All writable app state is stored under `data/` in the release folder:
 The `ratting_*` filenames and `app/ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app and extract v0.8.0 into a new folder. From v0.7.7
+To upgrade, close the old app and extract v0.8.1 into a new folder. From v0.7.7
 and earlier, copy the old root `ratting_config.json` and `ratting_history.json`
 into the new `data/` folder before launching. From v0.7.8 onward, copy `data/`.
 Legacy root state is also imported when its new destination is absent;
@@ -367,7 +375,7 @@ python app/ratting.py
 Keep the helper modules beside `app/ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.8.0 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.8.1 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -381,8 +389,8 @@ hash-pinned wheels, runs a runtime self-test and all six regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.8.1-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.8.1-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -404,7 +412,7 @@ runtime\python.exe -I -B tests\test_battles.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.8.0` tag; the portable ZIP is the downloadable release
+belongs to the `v0.8.1` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification

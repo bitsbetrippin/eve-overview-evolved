@@ -1,5 +1,5 @@
 ================================================================
- EVE-OVERLAY-EVOLVED v0.8.0 — HOW TO USE
+ EVE-OVERLAY-EVOLVED v0.8.1 — HOW TO USE
 ================================================================
 
 A passive desktop dashboard for EVE Online PvE pilots. It reads
@@ -42,11 +42,11 @@ It does NOT touch the EVE client, network traffic or memory.
   needs is in the gamelog.
 
 ----------------------------------------------------------------
- 3. RUNNING EVE-OVERLAY-EVOLVED v0.8.0
+ 3. RUNNING EVE-OVERLAY-EVOLVED v0.8.1
 ----------------------------------------------------------------
 
   PORTABLE RELEASE:
-    Download Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip.
+    Download Eve-Overlay-Evolved-v0.8.1-Windows-x64.zip.
     Right-click it, choose Extract All, then open the extracted
     folder and double-click START.bat. Keep all files together.
 
@@ -782,3 +782,7 @@ Settings > PURGE SAVED BATTLES clears all character archives after confirmation,
 keeping active fights, settings and income history. Pause/Stop/Reset/Quit save
 an active fight as [partial]. Cap drain, EWAR and misses alone do not start or
 extend fights. Old damage logs are not imported. See USER-GUIDE.md for details.
+
+SAM L / VOLUME SETUP PICTURES (v0.8.1)
+See README.md > Quick setup: SamL voice at 300% for the illustrated guide.
+Open the gear, set EWAR SOUND to Voice, choose SamL and High (300%), then APPLY.

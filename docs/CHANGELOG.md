@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.8.1 beta — 2026-10-03
+
+- Add a README walkthrough for Settings, SamL voice, High (300%) alert gain and Apply.
+- Add annotated overview/settings images with red boxes, arrows and numbered controls.
+- Update release labels and documentation; retain v0.8.0 application behavior.
+- Verify the tutorial images/links and rebuild the portable release with all 133 existing checks.
+
 ## v0.8.0 beta — 2026-10-03
 
 - Add automatic per-character battle capture with a fixed 60-second damage-idle boundary.
