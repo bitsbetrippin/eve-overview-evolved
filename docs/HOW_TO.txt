@@ -1,5 +1,5 @@
 ================================================================
- EVE-OVERLAY-EVOLVED v0.7.7 — HOW TO USE
+ EVE-OVERLAY-EVOLVED v0.7.8 — HOW TO USE
 ================================================================
 
 A passive desktop dashboard for EVE Online PvE pilots. It reads
@@ -22,8 +22,8 @@ It does NOT touch the EVE client, network traffic or memory.
 
   SOURCE CHECKOUT ONLY:
   - Python 3.9+ with Tkinter
-  - Optional packages: python -m pip install -r requirements.txt
-  - Run: python ratting.py
+  - Optional packages: python -m pip install -r app/requirements.txt
+  - Run: python app/ratting.py
 
 ----------------------------------------------------------------
  2. MAKE SURE EVE IS LOGGING
@@ -42,27 +42,27 @@ It does NOT touch the EVE client, network traffic or memory.
   needs is in the gamelog.
 
 ----------------------------------------------------------------
- 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.7
+ 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.8
 ----------------------------------------------------------------
 
   PORTABLE RELEASE:
-    Download Eve-Overlay-Evolved-v0.7.7-Windows-x64.zip.
+    Download Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip.
     Right-click it, choose Extract All, then open the extracted
     folder and double-click START.bat. Keep all files together.
 
     START.bat automatically uses the bundled Python and launches
-    ratting.py. The console stays open while the app is running.
+    app/ratting.py. The console stays open while the app is running.
     Close the dashboard with its X button when finished.
 
     Startup errors stay visible and Python errors are saved in
-    startup.log. No setup download is needed. Market prices still
+    data/logs/startup.log. No setup download is needed. Market prices still
     use the internet while the app is running.
 
     EVE logs are detected in the current Windows Documents folder,
     including OneDrive and redirected folders. Saved custom log
     paths are preserved; change them in Settings if needed.
 
-  INCOMING CAPACITOR DRAIN (v0.7.7):
+  INCOMING CAPACITOR DRAIN (v0.7.8):
     The amber INCOMING CAP DRAIN panel sits below TOP INCOMING DAMAGE.
     It combines neutralizer and Nosferatu loss in its session GJ and GJ/sec.
     Separate NEUT/NOS subtotals and top-source hover details show the split.
@@ -83,12 +83,12 @@ It does NOT touch the EVE client, network traffic or memory.
   SOURCE DOWNLOAD / FORK:
     GitHub's Code > Download ZIP does not include the runtime.
     Use the portable release ZIP, or install Python with Tkinter
-    and run python ratting.py from the source folder.
+    and run python app/ratting.py from the source folder.
     To build a portable ZIP for your fork on Windows, run:
-      python build_release.py
+      python tools/build_release.py
 
   On first launch the app will:
-    - create ratting_config.json next to the script
+    - create data/ratting_config.json under the release folder
     - auto-detect your EVE log directories
     - scan for all characters with recent log files
     - show a CHARACTER SELECTION popup (see §4)
@@ -573,14 +573,14 @@ It does NOT touch the EVE client, network traffic or memory.
   Themes are applied live — the window recolours in place with
   no flicker. Theme is saved per character.
 
-  Settings are stored in ratting_config.json next to the script.
+  Settings are stored in data/ratting_config.json under the release folder.
 
 ----------------------------------------------------------------
  17. HISTORY
 ----------------------------------------------------------------
 
   Each RESET, NEXT SITE or quit saves a row to
-  ratting_history.json (STOP alone does not — see §8):
+  data/ratting_history.json (STOP alone does not — see §8):
     date, character, duration, gross ISK, net ISK, loot value,
     ISK/h, kills, damage dealt/received, peak DPS in/out,
     missions done, sites cleared, avg/best site time and ISK
@@ -669,7 +669,7 @@ It does NOT touch the EVE client, network traffic or memory.
        is data that was already buffered before the suspend.
 
   Crash on startup
-    -> Read the START.bat console and startup.log if created.
+    -> Read the START.bat console and data/logs/startup.log if created.
        Diagnose the bundled runtime with START.bat --self-test.
 
 ----------------------------------------------------------------
@@ -687,11 +687,10 @@ It does NOT touch the EVE client, network traffic or memory.
         Windows : set EVE_OVERLAY_EVOLVED_DEBUG=1
         Linux   : export EVE_OVERLAY_EVOLVED_DEBUG=1
 
-    - Or add  "debug_log": true  to ratting_config.json
+    - Or add  "debug_log": true  to data/ratting_config.json
       The legacy EVE_RATTING_DEBUG variable also works.
 
-  Failures are then appended to ratting_debug.log next to
-  ratting.py, each with a timestamp, the function it came from,
+  Failures are then appended to data/logs/ratting_debug.log under data/, each with a timestamp, the function it came from,
   and a full traceback.
 
   The file is capped at 512 KB and starts over past that, so it
@@ -723,8 +722,7 @@ It does NOT touch the EVE client, network traffic or memory.
     1. Delete the project folder.
     No pip uninstall is needed for the portable release.
 
-  All settings, history, caches and the debug log live next to
-  ratting.py and are removed with the folder. Nothing is written
+  All settings, history, caches and the debug log live under data/ and are removed with the folder. Nothing is written
   to the registry, and nothing is left behind.
 
 ----------------------------------------------------------------
@@ -746,7 +744,7 @@ FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
 Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
 OVL controls the separate overlay. Start each pilot with Play first.
 
-ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.7)
+ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.8)
 Settings > SHOW THE INITIATIVE LOGO > APPLY enables the bundled INIT. logo.
 Settings > EWAR SOUND chooses Voice / Beep / Off. Use TEST buttons to preview.
 Voice uses your selected clip when you are scrambled / pointed / webbed / jammed.
@@ -757,17 +755,17 @@ Each effect repeats at most every 10 seconds per personal/nearby group, fleet-wi
 not mixed together. Personal queued alerts expire after 15 seconds; nearby after 8.
 These are log-event warnings, not continuous tackle status.
 
-VOICE STYLE / ALERT VOLUME (v0.7.7)
+VOICE STYLE / ALERT VOLUME (v0.7.8)
 Settings > VOICE STYLE: Robot / Commanding / Dramatic / News anchor / SamL.
 Settings > ALERT VOLUME: Low 100% / Medium 200% / High 300% digital gain.
 TEST previews the current selection; APPLY saves it for live alerts.
 Applies to Voice and Beep. Peaks are limited; Windows volume is unchanged.
 Original synthetic styles, not exact celebrity replicas. No runtime downloads.
 
-SAML VOICE (v0.7.7)
+SAML VOICE (v0.7.8)
 Settings > EWAR SOUND: Voice > VOICE STYLE: SamL > APPLY.
 Scrambled / Pointed / Webbed / Jammed use automatic personal-event triggers.
 Jammed is live for every voice style, using confirmed "You're jammed by" combat records.
 Generic lock failures are ignored. Nearby/outgoing jam detection is not yet supported.
-The four WAVs are under assets/voices/saml. Full supplied audio is preserved.
+The four WAVs are under app/assets/voices/saml. Full supplied audio is preserved.
 All clips support Low / Medium / High volume and offline playback.

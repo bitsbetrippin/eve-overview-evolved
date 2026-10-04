@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--words', nargs='+', choices=('scrambled', 'pointed', 'webbed', 'jammed'),
                     default=('scrambled', 'pointed', 'webbed', 'jammed'))
 for name in parser.parse_args().words:
-    path = Path(__file__).resolve().parent / 'assets' / (name + '.wav')
+    path = Path(__file__).resolve().parents[1] / 'app/assets' / (name + '.wav')
     with wave.open(str(path), 'rb') as source:
         params = source.getparams()
         assert params.nchannels == 1 and params.sampwidth == 2

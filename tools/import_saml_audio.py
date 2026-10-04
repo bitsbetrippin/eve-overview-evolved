@@ -34,6 +34,6 @@ def convert(source, destination):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
-    parser.add_argument('--destination', type=Path, default=Path(__file__).resolve().parent/'assets/voices/saml')
+    parser.add_argument('--destination', type=Path, default=Path(__file__).resolve().parents[1]/'app/assets/voices/saml')
     args = parser.parse_args()
     convert(args.source.resolve(), args.destination.resolve())

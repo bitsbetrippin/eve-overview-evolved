@@ -1,6 +1,6 @@
-EVE-OVERLAY-EVOLVED v0.7.7
+EVE-OVERLAY-EVOLVED v0.7.8
 
-1. Extract All from Eve-Overlay-Evolved-v0.7.7-Windows-x64.zip.
+1. Extract All from Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip.
 2. Open the extracted folder.
 3. Double-click START.bat.
 4. If only the fleet overview appears, click SHOW PANELS.
@@ -25,11 +25,12 @@ Quit using the X on the fleet overview. A character's X hides that
 dashboard. The console remains open while the app runs.
 
 UPGRADING
-Close the old app. Copy ratting_config.json and ratting_history.json,
-if present, from the old folder into this folder before launching.
+Close the old app. From v0.7.7 and earlier, copy the old root ratting_config.json
+and ratting_history.json into the new data/ folder before launching.
+From v0.7.8 and later, copy the existing data/ folder into the new release.
 Do not overwrite new source files or the runtime with old versions.
 
-Startup errors remain visible. See startup.log if created.
+Startup errors remain visible. See data/logs/startup.log if created.
 Diagnostic command: START.bat --self-test
 
 Contributions: @bitsbetrippin
@@ -37,13 +38,13 @@ Original concept/base: Eve-Ratting by @psychojf
 Project: https://github.com/bitsbetrippin/eve-overview-evolved
 Upstream: https://github.com/psychojf/Eve-Ratting
 
-Read README.md for layout, architecture and build instructions.
+Read the root README.md and docs/USER-GUIDE.md for layout, architecture and build instructions.
 
 FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
 Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
 OVL controls the separate overlay. Start each pilot with Play first.
 
-ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.7)
+ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.8)
 Settings > SHOW THE INITIATIVE LOGO > APPLY enables the bundled INIT. logo.
 Settings > EWAR SOUND chooses Voice / Beep / Off. Use TEST buttons to preview.
 Voice uses your selected clip when you are scrambled / pointed / webbed / jammed.
@@ -54,17 +55,17 @@ Each effect repeats at most every 10 seconds per personal/nearby group, fleet-wi
 not mixed together. Personal queued alerts expire after 15 seconds; nearby after 8.
 These are log-event warnings, not continuous tackle status.
 
-VOICE STYLE / ALERT VOLUME (v0.7.7)
+VOICE STYLE / ALERT VOLUME (v0.7.8)
 Settings > VOICE STYLE: Robot / Commanding / Dramatic / News anchor / SamL.
 Settings > ALERT VOLUME: Low 100% / Medium 200% / High 300% digital gain.
 TEST previews the current selection; APPLY saves it for live alerts.
 Applies to Voice and Beep. Peaks are limited; Windows volume is unchanged.
 Original synthetic styles, not exact celebrity replicas. No runtime downloads.
 
-SAML VOICE (v0.7.7)
+SAML VOICE (v0.7.8)
 Settings > EWAR SOUND: Voice > VOICE STYLE: SamL > APPLY.
 Scrambled / Pointed / Webbed / Jammed use automatic personal-event triggers.
 Jammed is live for every voice style, using confirmed "You're jammed by" combat records.
 Generic lock failures are ignored. Nearby/outgoing jam detection is not yet supported.
-The four WAVs are under assets/voices/saml. Full supplied audio is preserved.
+The four WAVs are under app/assets/voices/saml. Full supplied audio is preserved.
 All clips support Low / Medium / High volume and offline playback.

@@ -12,7 +12,7 @@ from unittest.mock import patch
 parser = argparse.ArgumentParser()
 parser.add_argument("--app", type=Path, default=Path(__file__).resolve().parents[1])
 args, test_args = parser.parse_known_args()
-APP = args.app.resolve()
+APP = args.app.resolve() / "app"
 sys.path.insert(0, str(APP))
 import startup
 startup.prepare()

@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.7.8 — 2026-10-03
+
+- Leave only START.bat and README.md as files in the Windows release root.
+- Organize application/assets under app/, guides/images under docs/, and source utilities under tools/.
+- Store settings/history in data/, caches in data/cache/, and logs in data/logs/.
+- Import legacy root state only when the new destination is absent; preserve originals and existing new state.
+- Update startup, resource paths, audio utilities, build packaging and contributor documentation.
+- Add five layout/path/migration checks (109 total), plus clean-launch and upgrade validation.
+
 ## v0.7.7 — 2026-10-03
 
 - Detect personal ECM jams from the contributed `You're jammed by` combat format, preserving attacker identity.

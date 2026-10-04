@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import wave
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1] / 'app'
 PROFILES = {
     # Original generic deliveries, with no actor recordings or voice cloning.
     'commanding': ('en-us+m1', 165, 25, 'Warning. You are {word}.'),

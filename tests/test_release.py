@@ -13,11 +13,12 @@ from unittest.mock import patch
 parser = argparse.ArgumentParser()
 parser.add_argument("--app", type=Path, default=Path(__file__).resolve().parents[1])
 args, test_args = parser.parse_known_args()
-APP = args.app.resolve()
+APP = args.app.resolve() / "app"
 sys.path.insert(0, str(APP))
 import startup
 startup.prepare()
 import eve_paths
+import app_paths
 
 TEST_ROOT = Path(__file__).resolve().parents[1] / "build" / "test-data"
 TEST_ROOT.mkdir(parents=True, exist_ok=True)
@@ -68,7 +69,7 @@ class StartupTests(unittest.TestCase):
         try:
             with patch.object(startup, "ROOT", folder), contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(startup.main(), 1)
-            self.assertIn("Missing app_info.py", (folder / "startup.log").read_text())
+            self.assertIn("Missing app/app_info.py", (folder / "data/logs/startup.log").read_text())
         finally:
             os.chdir(before)
 
@@ -101,6 +102,63 @@ class StartupTests(unittest.TestCase):
             finally:
                 ui._quit()
         self.assertEqual(json.loads(config.read_text())["log_path"], str(logs))
+
+
+class LayoutTests(unittest.TestCase):
+    def test_release_root_has_only_launcher_readme_and_source_metadata(self):
+        root = APP.parent
+        files = {p.name for p in root.iterdir() if p.is_file()}
+        self.assertIn('START.bat', files)
+        self.assertIn('README.md', files)
+        self.assertLessEqual(files, {'START.bat', 'README.md', '.gitignore'})
+        for path in ('app/startup.py', 'app/app_paths.py', 'app/assets/PVE.ico',
+                     'docs/USER-GUIDE.md', 'docs/ATTRIBUTION.md', 'runtime/python.exe'):
+            self.assertTrue((root/path).is_file(), path)
+
+    def test_state_paths_are_separate_from_application_and_resources(self):
+        import ratting
+        root = APP.parent
+        expected = {'CONFIG_FILE': 'data/ratting_config.json',
+                    'HISTORY_FILE': 'data/ratting_history.json',
+                    'PRICE_CACHE': 'data/cache/ratting_prices.json',
+                    'NAMEID_CACHE': 'data/cache/ratting_nameids.json',
+                    'DEBUG_LOG_FILE': 'data/logs/ratting_debug.log'}
+        for name, relative in expected.items():
+            self.assertEqual(Path(getattr(ratting, name)), root/relative)
+        self.assertEqual(ratting._ALERT_AUDIO.assets, APP/'assets')
+
+    def test_resource_paths_are_independent_of_launch_directory(self):
+        import ratting
+        before = Path.cwd()
+        unrelated = Path(tempfile.mkdtemp(dir=TEST_ROOT))
+        try:
+            os.chdir(unrelated)
+            for name in ('assets/PVE.ico', 'assets/initiative.png', 'assets/voices/saml/jammed.wav'):
+                self.assertEqual(Path(ratting._get_resource_path(name)), APP/name)
+                self.assertTrue(Path(ratting._get_resource_path(name)).is_file())
+        finally:
+            os.chdir(before)
+
+    def test_legacy_import_preserves_all_bytes_and_originals(self):
+        root = Path(tempfile.mkdtemp(dir=TEST_ROOT))/'Upgrade & paths (test)! Ω'
+        root.mkdir()
+        for i, name in enumerate(app_paths.LEGACY_FILES):
+            (root/name).write_bytes(('legacy-Ω-'+str(i)).encode('utf-8'))
+        app_paths.prepare_data(root)
+        for name, relative in app_paths.LEGACY_FILES.items():
+            self.assertEqual((root/relative).read_bytes(), (root/name).read_bytes())
+
+    def test_new_data_takes_precedence_and_second_launch_does_not_reset_it(self):
+        root = Path(tempfile.mkdtemp(dir=TEST_ROOT))
+        (root/'data').mkdir()
+        (root/'ratting_config.json').write_text('{"ewar_voice":"Robot"}')
+        config = root/'data/ratting_config.json'
+        config.write_text('{"ewar_voice":"SamL"}')
+        app_paths.prepare_data(root)
+        self.assertEqual(json.loads(config.read_text())['ewar_voice'], 'SamL')
+        config.write_text('{"ewar_voice":"Dramatic"}')
+        app_paths.prepare_data(root)
+        self.assertEqual(json.loads(config.read_text())['ewar_voice'], 'Dramatic')
 
 
 if __name__ == "__main__":

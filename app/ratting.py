@@ -28,6 +28,7 @@ from ewar_alerts import (AlertAudio, LABELS as EWAR_LABELS, parse_ewar,
 from neut_meter import CapDrainMeter, parse_incoming_cap_drain, source_label, format_gj
 from window_placement import move_near, recover_if_offscreen, title_visible, rectangle, work_areas
 from app_info import APP_NAME, APP_TITLE, VERSION, REPOSITORY_URL, CREDITS
+from app_paths import DATA_DIR, CACHE_DIR, LOG_DIR, prepare_data, resource_path
 
 # Sous pythonw.exe (mode fenêtre, sans console) sys.stdout vaut None : sans ce
 # test, l'exécutable livré planterait dès la première ligne. L'UTF-8 est imposé
@@ -270,22 +271,16 @@ def apply_theme_colors(name):
     C_ANOM = t["C_ANOM"]
 
 # ── Chemins et valeurs par défaut ────────────────────────────────────
-# Sous PyInstaller, __file__ pointe dans le dossier temporaire d'extraction qui
-# disparaît à la fermeture : config et historique y seraient perdus à chaque
-# lancement. On ancre donc tout à côté de l'exécutable réel.
-if getattr(sys, 'frozen', False):
-    _BASE = os.path.dirname(sys.executable)
-else:
-    _BASE = os.path.dirname(os.path.abspath(__file__))
+prepare_data()
 
 # Quatre fichiers distincts plutôt qu'un seul : ils n'ont ni la même durée de
 # vie ni le même coût. La config change à chaque geste de l'utilisateur,
 # l'historique ne fait que grandir, et les deux caches ESI sont jetables — on
 # peut les supprimer sans rien perdre, ils se reconstruiront tout seuls.
-CONFIG_FILE  = os.path.join(_BASE, "ratting_config.json")
-HISTORY_FILE = os.path.join(_BASE, "ratting_history.json")
-PRICE_CACHE  = os.path.join(_BASE, "ratting_prices.json")
-NAMEID_CACHE = os.path.join(_BASE, "ratting_nameids.json")
+CONFIG_FILE  = str(DATA_DIR / "ratting_config.json")
+HISTORY_FILE = str(DATA_DIR / "ratting_history.json")
+PRICE_CACHE  = str(CACHE_DIR / "ratting_prices.json")
+NAMEID_CACHE = str(CACHE_DIR / "ratting_nameids.json")
 
 # ── Journal de débogage ──────────────────────────────────────────────
 # Ce fichier avale volontairement ~100 exceptions (une fenêtre détruite en
@@ -296,7 +291,7 @@ NAMEID_CACHE = os.path.join(_BASE, "ratting_nameids.json")
 # Désactivé : un simple test booléen, rien n'est écrit ni formaté.
 # Activation : variable d'environnement EVE_RATTING_DEBUG=1, ou "debug_log":
 # true dans ratting_config.json.
-DEBUG_LOG_FILE = os.path.join(_BASE, "ratting_debug.log")
+DEBUG_LOG_FILE = str(LOG_DIR / "ratting_debug.log")
 DEBUG_LOG_MAX  = 512 * 1024          # octets — au-delà, le fichier repart à zéro
 _DEBUG_ON  = os.environ.get("EVE_OVERLAY_EVOLVED_DEBUG",
                             os.environ.get("EVE_RATTING_DEBUG", "")) not in ("", "0")
@@ -865,15 +860,7 @@ class DynamicTooltip:
 
 # Résout le chemin d'une ressource (compatible PyInstaller)
 def _get_resource_path(relative_path):
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path)
-    # D'abord à côté de l'exécutable ou du script, puis le dossier courant :
-    # sous PyInstaller la ressource est extraite près du binaire, alors qu'en
-    # développement elle vit à côté du .py.
-    p = os.path.join(_BASE, relative_path)
-    if os.path.exists(p):
-        return p
-    return os.path.join(os.path.abspath("."), relative_path)
+    return resource_path(relative_path)
 
 # ── Session data model ───────────────────────────────────────────────
 # Conteneur de données de session (DPS, ISK, kills, anomalies, missions)
@@ -6803,7 +6790,7 @@ class MainUI:
         try:
             icon_img = None
             for fname in ('PVE.ico', 'PVE.png'):
-                icon_path = _get_resource_path(fname)
+                icon_path = _get_resource_path("assets/" + fname)
                 if os.path.exists(icon_path):
                     icon_img = Image.open(icon_path)
                     break
