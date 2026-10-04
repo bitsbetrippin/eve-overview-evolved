@@ -14,6 +14,8 @@ The portable Windows release bundles all these packages.
 - Keep UI/session changes in `app/ratting.py`, named combat metrics in
   `app/combat_meter.py`, path discovery in `app/eve_paths.py`, and release identity
   in `app/app_info.py`. Monitor placement belongs in `app/window_placement.py`; incoming neutralizer/Nos accounting belongs in `app/neut_meter.py`.
+- Keep battle timing, peak accounting and payload schema in `app/battle_history.py`.
+  Cover damage-idle boundaries, delayed batches, source peaks, corrupt files and independent UI selection.
 - Keep Tk operations on the UI thread and slow lookups off it.
 - Preserve JSON filenames and saved custom paths; writable state belongs under data/.
 - Centralize resource/data paths in app/app_paths.py. START.bat and README.md are the only release-root files.
@@ -24,7 +26,7 @@ The portable Windows release bundles all these packages.
 
 ## Verification
 
-The release builder runs all five test suites against a fresh runtime:
+The release builder runs all six test suites against a fresh runtime:
 
 ```bat
 python tools/build_release.py
@@ -39,6 +41,7 @@ runtime\python.exe -I -B tests\test_combat.py
 runtime\python.exe -I -B tests\test_panels.py
 runtime\python.exe -I -B tests\test_neuts.py
 runtime\python.exe -I -B tests\test_ewar.py
+runtime\python.exe -I -B tests\test_battles.py
 ```
 
 Use synthetic or anonymized log fixtures and isolated settings in tests. Do not commit personal

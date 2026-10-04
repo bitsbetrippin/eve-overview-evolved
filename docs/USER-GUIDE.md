@@ -1,4 +1,4 @@
-# Eve-Overlay-Evolved v0.7.8
+# Eve-Overlay-Evolved v0.8.0
 
 A desktop combat and income overlay for EVE Online. Track target DPS,
 who is dealing the most damage to you, incoming capacitor drain, bounties, loot and session progress
@@ -16,11 +16,11 @@ See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 **Repository:** [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 The repository URL uses `overview`; the application name is **Eve-Overlay-Evolved**.
-**Release tag:** `v0.7.8`.
+**Release tag:** `v0.8.0`.
 
 ## Download, extract, launch
 
-1. Download **Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip** from the release assets.
+1. Download **Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip** from the release assets.
 2. Right-click the ZIP and choose **Extract All** into a writable folder.
 3. Open the extracted folder and double-click **START.bat**.
 4. Select your characters, then press **Play** on a character dashboard.
@@ -36,18 +36,89 @@ GitHub's **Code > Download ZIP** contains source without the runtime.
 Use the versioned Windows release ZIP for the ready-to-run experience.
 Market-price lookups use an internet connection while the app is running.
 
-## What's new in v0.7.8
+## What's new in v0.8.0 beta
 
-The root now contains just `START.bat` and `README.md` as files. Application
-code and assets live in `app/`, the bundled interpreter in `runtime/`, saved
-state in `data/`, and guides/screenshots in `docs/`. Developer tools and tests
-are organized into `tools/` and `tests/` in the source ZIP.
+Battle Review adds local per-character battle history, independent outgoing
+and incoming selectors, EVE-time ranges, 15-second peak metrics and a Settings
+purge control. The portable root stays clean: START.bat and README.md, with
+application, runtime, data and documentation in their own folders.
 
-Extract into a new folder. For older versions, copy data/ratting_config.json and
-data/ratting_history.json into the new `data/` folder before launch. For v0.7.8 and
-later, copy the old `data/` folder. Close the old app before copying.
-Legacy state placed in the root is imported only when its new destination is
-absent; original files and existing new-format data are preserved.
+## Battle Review: current and previous engagements
+
+Press Play to capture new fights. A positive damage event dealt or received
+starts a battle. The next damage event keeps it open if the gap is less than
+60 seconds. A gap of **60 seconds or more** ends the previous battle; after
+60 seconds with no new damage read, it is saved even if no more log lines arrive.
+The app drains pending log writes before making that idle decision.
+
+The battle gap is fixed at 60 seconds, independent of the configurable anomaly
+**Site gap**. Misses, EWAR, bounties and capacitor drain do not start or extend
+the battle. Incoming neut/Nos loss after damage starts is included while the
+fight remains open. Cap drain at or after its 60-second boundary is excluded
+from that battle, but still counts in the regular session cap meter.
+
+The two selectors are independent and default to **Current** on every launch:
+
+| Selector | Current | Saved battle |
+| --- | --- | --- |
+| Above aqua DPS | Latest target hit and its live rolling DPS | Highest single-target 15-second peak and that target's name; hover for all-target peak and total damage |
+| Battle Review, below red attackers | Recent attackers and session cap drain | Top three independent attacker peaks, combined incoming peak, and saved cap totals/rates below |
+
+Choose any date/time entry in a dropdown to review it. The header repeats the
+full **date and EVE/UTC time range**; dropdown entries also have a short ID to
+distinguish similar fights. Midnight-spanning fights show both dates. The range
+ends at the last included damage/cap event, not 60 seconds later at save time.
+There is no outgoing peak in an incoming-only fight: it shows zero and
+**No outgoing damage**.
+
+Peak windows use the interval **(event time − 15 seconds, event time]**. Damage
+or loss in that interval is divided by 15; short fights still use the full
+denominator. Events sharing a log second each count. Ties keep the first peak.
+Each attacker/target has its own peak timestamp, so the three displayed incoming
+peaks need not be simultaneous. The combined incoming peak is calculated
+separately and is not the sum of those individual maxima.
+
+Saved peaks use log timestamps. Current live meters retain their monotonic
+arrival-time behavior, so delayed logs can produce a different live rate.
+Records older than the active battle's last accepted event are skipped for
+battle accounting to protect chronological windows. Missing timestamps fall
+back to the current UTC time. Identical logged names share a bucket.
+
+The amber panel follows the **incoming** selector. Saved mode shows combined
+peak GJ/s, battle GJ lost, separate NEUT/NOS totals, and three sources ranked
+by total battle loss. Hover a source for its independent peak rate, split and
+last module. Full payloads also retain separate neutralizer/Nos peak rates.
+This measures logged loss, not capacitor remaining or net capacitor balance.
+
+Reviewing history never pauses monitoring, switches the fleet DPS to old data,
+or changes your income session. Choose **Current** on either dropdown to return
+that section to normal. Pause, Stop, Reset/Next Site, Quit and suspension of
+hidden monitoring save an open fight with **[partial]** and its close reason.
+Reset clears live counters but retains archived battles. No automatic old-log
+damage import or reconstruction of previous sessions is performed.
+
+![Saved battle review using synthetic data](images/battle-review-v0.8.0.png)
+
+### Local storage and purge
+
+Each saved battle is one UTF-8 JSON file in **data/battles/**. Its schema records
+pilot ID/name, UTC range, complete/partial status, 15-second peaks/timestamps,
+outgoing/incoming totals and source rows, plus neut/Nos breakdowns. Files are
+written through temporary-file replacement; no battle data is uploaded.
+Histories are separated by character ID and listed newest first.
+
+**Settings > PURGE SAVED BATTLES** reports the archive count and asks for
+confirmation. It deletes battle summaries for **all characters**, including
+unreadable battle files and queued unsaved summaries. It keeps the active
+fight, configuration, caches and income-session history. Both dropdowns return
+to Current. This action cannot be undone; copy data/battles/ first for a backup.
+There is no automatic retention limit.
+
+An unreadable battle payload is skipped and counted in Settings rather than
+blocking startup. A disk write failure retains the summary in memory, displays
+an error in Battle Review and retries while the app is open. Completed/partial
+records survive restart; an active fight or a still-unsaved retry can be lost
+if the process terminates unexpectedly. Restore disk access before quitting.
 
 ## EWAR sound and jamming
 
@@ -81,7 +152,7 @@ Hidden dashboards require Background Monitoring and a running session.
 
 ## Interface layout
 
-The **fleet overview** is the main hub: one row per character with total
+The **fleet overview** is the main hub: one row per character with live
 target DPS, net ISK, ISK/hour, session time and the detached DPS-overlay toggle. Its
 header provides Settings, Fleet Manager, clipboard lock and Quit. Hover
 the application title for contributor and upstream credits. **SHOW PANELS**
@@ -90,22 +161,23 @@ Enable the optional INIT. logo and choose EWAR sound in Settings, then Apply.
 Click a character row to show/hide that pilot's dashboard; the OVL column
 controls the separate aggregate DPS overlay.
 
-![Fleet overview in v0.7.8](images/overview-v0.7.8.png)
+![Fleet overview in v0.8.0](images/overview-v0.8.0.png)
 
 Each **character dashboard** is arranged from top to bottom:
 
 | Section | Purpose |
 | --- | --- |
 | Character title bar | Pilot name; drag to move or double-click to collapse |
-| **TARGET DPS — bold aqua** | DPS and name of the latest target hit |
-| **TOP INCOMING DAMAGE — bold bright red** | Three attackers ranked by recent damage, with their DPS |
-| **INCOMING CAP DRAIN — bold amber** | Combined GJ/sec and session GJ, NEUT/NOS split, top three sources by session total |
+| **TARGET DPS — bold aqua** | Latest target DPS, or saved peak target DPS through its dropdown |
+| **TOP INCOMING DAMAGE — bold bright red** | Three recent attackers, or independent saved peaks |
+| **BATTLE REVIEW** | Incoming Current/saved selector, date/time range and combined incoming peak |
+| **INCOMING CAP DRAIN — bold amber** | Combined GJ/sec and session GJ, or saved peak/battle totals, NEUT/NOS split and top sources |
 | Controls | Play, Pause, Stop, Reset, Next Site and clipboard lock |
 | Alerts | Combat/EWAR notifications and session events |
 | ISK tracker | ISK/hour, session timer, bounties, tax, kills, loot and net income |
 | Missions or anomalies | Mission progress or site timing, counts and averages |
 
-![Character dashboard with sample combat data](images/dashboard-v0.7.8.png)
+![Character dashboard with sample combat data](images/dashboard-v0.8.0.png)
 
 *Preview uses synthetic combat data. The meter panels stay aqua/red/amber
 across themes. Other panels follow the selected theme.*
@@ -118,7 +190,7 @@ click-through behavior are intended for borderless/fixed-window play.
 
 ## Combat meters and controls
 
-The two damage panels use a **rolling 15-second window** and refresh at the configured
+In **Current** mode, the two damage panels use a **rolling 15-second window** and refresh at the configured
 UI interval, **250 ms by default**. DPS is damage inside that window divided
 by 15; it ramps up as hits arrive and falls to zero as they expire.
 
@@ -152,7 +224,7 @@ loot haul together.
 
 ## Incoming capacitor drain
 
-The amber **INCOMING CAP DRAIN** panel sums incoming neutralizer and
+In **Current** mode, the amber **INCOMING CAP DRAIN** panel sums incoming neutralizer and
 Nosferatu loss as reported in the log. It shows the combined session GJ,
 separate NEUT/NOS session subtotals and a combined 15-second GJ/sec rate.
 It does not estimate capacitor remaining, regeneration, local module use,
@@ -211,6 +283,10 @@ flowchart TD
     N[app/window_placement.py: monitor work areas and recovery] --> D
     G --> O[CapDrainMeter: neut + Nos session GJ and 15-second rate]
     O --> D
+    G --> P[BattleTracker: 60s damage gap and log-time peaks]
+    P --> Q[BattleStore: atomic local JSON payloads]
+    Q --> R[Independent Current / saved selectors]
+    R --> D
 ```
 
 | File / component | Responsibility |
@@ -222,6 +298,7 @@ flowchart TD
 | `app/ratting.py` | Tkinter windows, log tailing/rotation, session state, themes, alerts and price workers |
 | `app/combat_meter.py` | Damage-line normalization, bounded named rolling totals, expiry and incoming ranking |
 | `app/neut_meter.py` | Incoming neutralizer/Nos parsing, separate and combined totals, source ranking and GJ/sec |
+| `app/battle_history.py` | Per-character fight lifecycle, event-time rolling peaks, validation, atomic persistence and purge |
 | `app/ewar_alerts.py` | Recipient-aware tackle/web and confirmed personal ECM parsing; prioritized personal voice and nearby beep playback, style selection and limited PCM gain |
 | `app/assets/` | Initiative logo, robotic WAV warnings and source notices |
 | `app/eve_paths.py` | Redirected Documents, OneDrive, standard Documents and Linux/Proton path candidates |
@@ -232,12 +309,16 @@ flowchart TD
 | `tests/test_combat.py` | Parsing, attribution, rolling totals, log-to-widget updates and character panels |
 | `tests/test_panels.py` | Multiple-pilot startup, row clicks, hidden/collapsed recovery and monitor geometry |
 | `tests/test_neuts.py` | Anonymized neut/Nos replay, sign/direction checks, totals/rates, duplicate records, UI and history |
+| `tests/test_battles.py` | Time boundaries, peak math, storage/retry, per-pilot isolation, purge and real Tk history selection |
 | `tests/test_ewar.py` | EWAR direction, sound queue, styles/gain, WAV integrity and live logo/settings checks |
 
 The UI uses Tk's event loop. File notifications and timer polling drive
 incremental log reading; market lookups run in background threads. Named
 damage buckets use monotonic arrival time and a bounded event queue. Stop
-snapshots remain frozen while live damage expires. JSON settings/history
+snapshots remain frozen while live damage expires. BattleTracker uses one bucket
+per log second for recent peaks and retains cumulative source summaries.
+BattleStore caches validated payloads; only archive changes refresh dropdown lists.
+JSON settings/history
 use temporary-file replacement when written.
 
 The app reads gamelogs produced by EVE. It does not read game-process
@@ -258,7 +339,8 @@ All writable app state is stored under `data/` in the release folder:
 | File | Contents |
 | --- | --- |
 | `data/ratting_config.json` | Log path, pilot preferences, themes and window positions |
-| `data/ratting_history.json` | Saved sessions |
+| `data/ratting_history.json` | Saved income sessions |
+| `data/battles/<id>.json` | Per-character combat battle payloads and peak metrics |
 | `data/cache/ratting_prices.json` / `data/cache/ratting_nameids.json` | Disposable price and item-ID caches |
 | `data/logs/startup.log` | Most recent caught Python startup/application failure |
 | `data/logs/ratting_debug.log` | Optional internal diagnostics |
@@ -266,7 +348,7 @@ All writable app state is stored under `data/` in the release folder:
 The `ratting_*` filenames and `app/ratting.py` entry point remain for
 compatibility with earlier Eve-Ratting-based releases.
 
-To upgrade, close the old app and extract v0.7.8 into a new folder. From v0.7.7
+To upgrade, close the old app and extract v0.8.0 into a new folder. From v0.7.7
 and earlier, copy the old root `ratting_config.json` and `ratting_history.json`
 into the new `data/` folder before launching. From v0.7.8 onward, copy `data/`.
 Legacy root state is also imported when its new destination is absent;
@@ -285,7 +367,7 @@ python app/ratting.py
 Keep the helper modules beside `app/ratting.py`. Optional packages provide
 clipboard support (`pyperclip`), tray/images (`pystray`, `Pillow`), and
 file notifications (`watchdog`). All are included in the Windows release.
-Source retains Linux/Proton path fallbacks; v0.7.8 packaging and GUI
+Source retains Linux/Proton path fallbacks; v0.8.0 packaging and GUI
 verification target Windows x64.
 
 Build on Windows:
@@ -295,12 +377,12 @@ python tools/build_release.py
 ```
 
 The builder verifies the official CPython 3.13.15 x64 runtime, installs
-hash-pinned wheels, runs a runtime self-test and all five regression suites,
+hash-pinned wheels, runs a runtime self-test and all six regression suites,
 then writes:
 
 ```text
-dist/Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip
-dist/Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip.sha256
+dist/Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip
+dist/Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip.sha256
 ```
 
 For an offline rebuild, supply a cached runtime archive and the exact wheels:
@@ -318,10 +400,11 @@ runtime\python.exe -I -B tests\test_combat.py
 runtime\python.exe -I -B tests\test_panels.py
 runtime\python.exe -I -B tests\test_neuts.py
 runtime\python.exe -I -B tests\test_ewar.py
+runtime\python.exe -I -B tests\test_battles.py
 ```
 
 Runtime/build folders and user state are excluded from Git. Release source
-belongs to the `v0.7.8` tag; the portable ZIP is the downloadable release
+belongs to the `v0.8.0` tag; the portable ZIP is the downloadable release
 asset, distinct from GitHub's source-only ZIP.
 
 ## Troubleshooting and verification
@@ -334,13 +417,15 @@ asset, distinct from GitHub's source-only ZIP.
 - A pilot is absent from the fleet: enable it in Fleet Manager first.
 - Meters show zero: press Play and allow new combat hits to arrive.
 - Cap-drain total stays zero: check for incoming `GJ energy neutralized` or negative `GJ energy drained to` entries with original color tags, written while tracking.
+- Saved battle has not appeared: leave Play running until 60 seconds pass without damage. A cap-only exchange does not start a fight.
+- A dashboard is too tall: collapse or detach the ISK, Missions or Alerts sections, or disable the optional logo.
 - Startup failure: read the console and `data/logs/startup.log`, if created.
 - Runtime check: `START.bat --self-test` reports product/version, Python,
   Tk, package versions and log path without reading logs or the clipboard.
 - Internal diagnostics: set `EVE_OVERLAY_EVOLVED_DEBUG=1` or add
   `"debug_log": true` to the config. Legacy `EVE_RATTING_DEBUG` also works.
 
-Validation covers 109 automated checks and clean-extraction startup without
+Validation covers 133 automated checks and clean-extraction startup without
 system Python on PATH, including conflicting Python/Tk settings. GUI
 previews use synthetic data; tests also replay anonymized neutralizer/Nos records. Live EVE sessions and online
 market-price services are not integration-tested.
@@ -359,7 +444,7 @@ nearby events. Personal clips play first; nearby events always use a beep. `app/
 `tools/build_release.py` copies that directory; startup verifies that the assets exist.
 `tests/test_ewar.py` replays anonymized real ECM records and covers direction,
 all alert types, duplicate cooldown, queue behavior, WAV integrity,
-and actual Tk settings/logo/log-reader integration. The suite brings the total to 109.
+and actual Tk settings/logo/log-reader integration. The full release has 133 regression checks across six suites.
 
 To regenerate the voice clips as a developer, use `tools/generate_alert_audio.ps1
 -EspeakExe C:/path/to/espeak-ng.exe` with eSpeak NG 1.52.0 and its data directory.
@@ -368,7 +453,7 @@ generates the other three styles. eSpeak needs the en-us language and m1/m3/klat
 voice variants to regenerate these. Neither synthesizer nor generator
 is required for normal use. Asset credits and sources are in `app/assets/NOTICE.txt`.
 
-![Voice and volume settings](images/settings-v0.7.8.png)
+![Voice and volume settings](images/settings-v0.8.0.png)
 
 ### SamL clips
 

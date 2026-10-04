@@ -21,7 +21,7 @@ LEGACY_FILES = {
 def prepare_data(root=ROOT):
     """Import legacy root state only if absent; preserve originals and new state."""
     root = Path(root)
-    for folder in ('data', 'data/cache', 'data/logs'):
+    for folder in ('data', 'data/cache', 'data/logs', 'data/battles'):
         (root / folder).mkdir(parents=True, exist_ok=True)
     for name, relative in LEGACY_FILES.items():
         source, target = root / name, root / relative

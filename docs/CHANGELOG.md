@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.8.0 beta — 2026-10-03
+
+- Add automatic per-character battle capture with a fixed 60-second damage-idle boundary.
+- Record log-time 15-second peaks, totals, target/attacker identities and UTC ranges.
+- Add independent Current/saved-battle selectors for aqua DPS and red incoming/cap panels.
+- Save incoming neut/Nos combined and split battle totals, peak rates and source summaries.
+- Persist atomic JSON payloads under data/battles/; skip corrupt records and retry failed writes.
+- Save interruption summaries as partial; keep live fleet monitoring during history review.
+- Add Settings archive count and confirmed purge, preserving active fights and income history.
+- Rebuild README feature coverage, architecture documentation and UI previews.
+- Add 24 focused battle checks (133 total) and verify the portable ZIP and upgrade path.
+
 ## v0.7.8 — 2026-10-03
 
 - Leave only START.bat and README.md as files in the Windows release root.

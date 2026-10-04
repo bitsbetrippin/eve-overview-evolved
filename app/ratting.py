@@ -18,11 +18,12 @@
 # =============================================================================
 import sys
 import tkinter as tk
-from tkinter import ttk, font as tkfont
+from tkinter import ttk, font as tkfont, messagebox
 import os, re, json, time, threading, urllib.request, traceback
 from datetime import datetime, timedelta, timezone
 from collections import deque
 from combat_meter import CombatMeter, parse_damage
+from battle_history import BattleStore, BattleTracker, battle_title, IDLE as BATTLE_IDLE
 from ewar_alerts import (AlertAudio, LABELS as EWAR_LABELS, parse_ewar,
                          VOICE_FOLDERS, VOLUME_GAINS, DEFAULT_VOICE, DEFAULT_VOLUME)
 from neut_meter import CapDrainMeter, parse_incoming_cap_drain, source_label, format_gj
@@ -1879,6 +1880,9 @@ class CharacterWindow:
         self.root.attributes("-alpha", self.alpha)
 
         self.data   = Data()
+        self._battle_store = (main_ui._battle_store if main_ui is not None else
+                              BattleStore(os.path.join(os.path.dirname(CONFIG_FILE), "battles")))
+        self.battles = BattleTracker(self._battle_store, char_id, char_name)
         self._dx = self._dy = 0
         self._st  = "stopped"
         self._main_hidden = False
@@ -2879,9 +2883,15 @@ class CharacterWindow:
         panel = self._combat_container
         heading = tk.Frame(panel, bg=BG_P)
         heading.pack(fill="x", padx=7, pady=(5, 0))
-        label(heading, "TARGET DPS", aqua, self._meter_name_font).pack(side="left")
+        self._target_heading = label(heading, "TARGET DPS", aqua, self._meter_name_font)
+        self._target_heading.pack(side="left")
         self._meter_status = label(heading, "PRESS PLAY", aqua, ("Consolas", 8, "bold"))
         self._meter_status.pack(side="right")
+        self._out_battle_var = tk.StringVar(value="Current")
+        self._out_battle_box = ttk.Combobox(panel, textvariable=self._out_battle_var,
+            state="readonly", values=("Current",), width=1, font=("Consolas", 8), style="E.TCombobox")
+        self._out_battle_box.pack(fill="x", padx=7, pady=(3, 2))
+        self._out_battle_box.bind("<<ComboboxSelected>>", self._battle_selection_changed)
         self._target_dps_row = tk.Frame(panel, bg=BG_P)
         self._target_dps_row.pack(fill="x", padx=7)
         self._initiative_badge = _initiative_badge(self._target_dps_row, self.cfg, 64, BG_P)
@@ -2889,16 +2899,18 @@ class CharacterWindow:
         self._target_dps_label.pack(side="left", fill="x", expand=True)
         self._target_name_label = label(panel, "No recent target", aqua, self._meter_name_font, width=1)
         self._target_name_label.pack(fill="x", padx=7)
-        tk.Label(panel, text=f"Last target hit / {DPS_W}s average", bg=BG_P, fg=T1,
-                 font=("Consolas", 8)).pack(pady=(0, 5))
+        self._target_caption = tk.Label(panel, text=f"Last target hit / {DPS_W}s average", bg=BG_P, fg=T1,
+                 font=("Consolas", 8), wraplength=260)
+        self._target_caption.pack(fill="x", padx=7, pady=(0, 5))
         DynamicTooltip(self._target_name_label, lambda: self._combat_display["target"] or "No target hit in the last 15 seconds")
-        Tooltip(self._target_dps_label, "Damage to the latest target hit, divided by 15 seconds.\nUpdates as new combat log entries arrive. Identical names are grouped.")
+        DynamicTooltip(self._target_dps_label, self._target_peak_tooltip)
 
         panel = self._incoming_container
-        label(panel, "TOP INCOMING DAMAGE", red, self._meter_name_font,
-              anchor="w").pack(fill="x", padx=7, pady=(5, 0))
-        tk.Label(panel, text=f"Top attackers / last {DPS_W}s", bg=BG_P, fg=T1,
-                 font=("Consolas", 8), anchor="w").pack(fill="x", padx=7)
+        self._incoming_heading = label(panel, "TOP INCOMING DAMAGE", red, self._meter_name_font, anchor="w")
+        self._incoming_heading.pack(fill="x", padx=7, pady=(5, 0))
+        self._incoming_caption = tk.Label(panel, text=f"Top attackers / last {DPS_W}s", bg=BG_P, fg=T1,
+                 font=("Consolas", 8), anchor="w")
+        self._incoming_caption.pack(fill="x", padx=7)
         self._incoming_rows = []
         for index in range(3):
             row = tk.Frame(panel, bg=BG_P)
@@ -2912,12 +2924,62 @@ class CharacterWindow:
             for widget in (name, value):
                 DynamicTooltip(widget, lambda i=index: self._incoming_tooltip(i))
 
+        tk.Label(panel, text="BATTLE REVIEW · DAMAGE / CAP DRAIN", bg=BG_P, fg=T1,
+                 font=("Consolas", 8), anchor="w").pack(fill="x", padx=7)
+        self._in_battle_var = tk.StringVar(value="Current")
+        self._in_battle_box = ttk.Combobox(panel, textvariable=self._in_battle_var,
+            state="readonly", values=("Current",), width=1, font=("Consolas", 8), style="E.TCombobox")
+        self._in_battle_box.pack(fill="x", padx=7, pady=(2, 2))
+        self._in_battle_box.bind("<<ComboboxSelected>>", self._battle_selection_changed)
+        self._battle_detail = tk.Label(panel, text="Current · waiting for damage\n60s idle ends fight", bg=BG_P, fg=T1,
+                                      font=("Consolas", 8), wraplength=260, justify="left", anchor="w")
+        self._battle_detail.pack(fill="x", padx=7, pady=(0, 4))
+        self._battle_generation = -1
+        self._battle_choices = {}
+        self._refresh_battle_choices()
+
+    def _refresh_battle_choices(self):
+        if self._battle_generation == self._battle_store.generation:
+            return
+        records = self._battle_store.for_character(self.char_id)
+        self._battle_choices = {f"{battle_title(r)} · {r['id'][:8]}": r['id'] for r in records}
+        values = ("Current", *self._battle_choices)
+        for variable, box in ((self._out_battle_var, self._out_battle_box), (self._in_battle_var, self._in_battle_box)):
+            box.configure(values=values)
+            if variable.get() not in values:
+                variable.set("Current")
+        self._battle_generation = self._battle_store.generation
+
+    def _selected_battle(self, variable):
+        return self._battle_store.records.get(self._battle_choices.get(variable.get()))
+
+    @staticmethod
+    def _battle_header(record):
+        return battle_title(record).replace(' ', '\n', 1)
+
+    def _battle_selection_changed(self, event=None):
+        self._update_combat_meters()
+        self._fit()
+
+    def _target_peak_tooltip(self):
+        record = self._selected_battle(self._out_battle_var)
+        if record:
+            peak = record['outgoing']['sources']
+            return (f"{battle_title(record)}\nHighest single-target 15s DPS; peak at {peak[0]['peak_at'] if peak else 'n/a'}.\n"
+                    f"All-target peak: {record['outgoing']['peak_rate']:,.1f} DPS\n"
+                    f"Total outgoing damage: {record['outgoing']['total']:,.0f}")
+        return "Damage to the latest target hit, divided by 15 seconds.\nSaved battles use EVE log time for their peaks."
+
     def _incoming_tooltip(self, index):
         attackers = self._combat_display["attackers"]
         if index >= len(attackers):
-            return "No incoming damage in the last 15 seconds"
+            return ("No incoming damage in this battle" if self._selected_battle(self._in_battle_var)
+                    else "No incoming damage in the last 15 seconds")
         name, amount, dps = attackers[index]
-        return f"{name}\n{amount:,.0f} damage in 15 seconds / {dps:,.1f} DPS\nIdentical logged names are grouped."
+        saved = self._selected_battle(self._in_battle_var)
+        detail = (f"Independent peak at {saved['incoming']['sources'][index]['peak_at']}" if saved
+                  else "Identical logged names are grouped.")
+        return f"{name}\n{amount:,.0f} damage in 15 seconds / {dps:,.1f} DPS\n{detail}"
 
     def _build_neut_meter(self):
         panel, amber = self._neut_container, "#FFB347"
@@ -2942,11 +3004,19 @@ class CharacterWindow:
         DynamicTooltip(self._cap_breakdown_label, lambda: (
             f"Neutralizers: {format_gj(self._neut_display['neut_gj'])} GJ\n"
             f"Nosferatu: {format_gj(self._neut_display['nos_gj'])} GJ\n"
-            "Both contribute to session total, recent GJ/s and source rankings."))
-        tk.Label(panel, text="15s rate / sources by session GJ", font=("Consolas", 8),
-                 bg=BG_P, fg=T1, anchor="w").pack(fill="x", padx=7)
-        Tooltip(self._neut_total_label, "Incoming neutralizer and Nosferatu loss, as reported by the log.\nReset / Next Site clears the total.\nExcludes capacitor gained, local module use and regeneration.")
-        Tooltip(self._neut_rate_label, "Incoming neutralizer plus Nosferatu loss during the last 15 seconds / 15.\nStop freezes the display; Pause lets recent events expire.")
+            "Both contribute to the displayed total, GJ/s and source rankings."))
+        self._neut_caption = tk.Label(panel, text="15s rate / sources by session GJ", font=("Consolas", 8),
+                 bg=BG_P, fg=T1, anchor="w")
+        self._neut_caption.pack(fill="x", padx=7)
+        DynamicTooltip(self._neut_total_label, lambda: (
+            "Incoming neutralizer and Nosferatu loss, as reported by the log.\n"
+            + ("Saved battle total; retained until purged." if self._selected_battle(self._in_battle_var)
+               else "Session total; Reset / Next Site clears it.")
+            + "\nExcludes capacitor gained, local module use and regeneration."))
+        DynamicTooltip(self._neut_rate_label, lambda: (
+            f"Saved battle peak over 15 seconds; at {self._selected_battle(self._in_battle_var)['cap_drain']['peak_at'] or 'n/a'}."
+            if self._selected_battle(self._in_battle_var) else
+            "Incoming neutralizer plus Nosferatu loss during the last 15 seconds / 15.\nStop freezes the display; Pause lets recent events expire."))
         self._neut_rows = []
         for index in range(3):
             row = tk.Frame(panel, bg=BG_P)
@@ -2962,9 +3032,11 @@ class CharacterWindow:
     def _neut_tooltip(self, index):
         sources = self._neut_display["sources"]
         if index >= len(sources):
-            return "No incoming capacitor drain recorded this session"
+            return ("No incoming capacitor drain recorded this battle" if self._selected_battle(self._in_battle_var)
+                    else "No incoming capacitor drain recorded this session")
         row = sources[index]
-        return (f"{row['source']}\n{format_gj(row['total_gj'])} GJ this session"
+        scope = 'saved battle (15s peak)' if self._selected_battle(self._in_battle_var) else 'session'
+        return (f"{row['source']}\n{format_gj(row['total_gj'])} GJ this {scope}"
                 f" / {row['gj_per_second']:,.1f} GJ/s over 15s"
                 f"\nNEUT {format_gj(row['neut_gj'])} GJ / NOS {format_gj(row['nos_gj'])} GJ"
                 f"\nLast module: {row['module']}")
@@ -2972,9 +3044,19 @@ class CharacterWindow:
     def _update_neut_meter(self):
         frozen = self._frozen.get("cap_drain") if self._st == "stopped" and self._frozen else None
         self._neut_display = frozen if frozen is not None else self.data.cap_drain.snapshot()
+        saved = self._selected_battle(self._in_battle_var)
+        if saved:
+            cap = saved['cap_drain']
+            self._neut_display = {
+                'total_gj': cap['total'], 'neut_gj': cap['neut_gj'], 'nos_gj': cap['nos_gj'],
+                'gj_per_second': cap['peak_rate'],
+                'sources': [dict(source=r['name'], total_gj=r['total'], neut_gj=r['neut_gj'],
+                    nos_gj=r['nos_gj'], gj_per_second=r['peak_rate'], module=r['module'])
+                    for r in sorted(cap['sources'], key=lambda r: (-r['total'], r['name']))[:3]]}
         snapshot = self._neut_display
         self._cset(self._neut_rate_label, text=f"{snapshot['gj_per_second']:,.1f} GJ/s")
-        self._cset(self._neut_total_label, text=f"SESSION {format_gj(snapshot['total_gj'])} GJ")
+        self._cset(self._neut_total_label, text=f"{'BATTLE' if saved else 'SESSION'} {format_gj(snapshot['total_gj'])} GJ")
+        self._cset(self._neut_caption, text="PEAK 15s rate / battle source GJ" if saved else "15s rate / sources by session GJ")
         width = self._neut_container.winfo_width()
         width = (width if width > 1 else WIN_W - 16) - 14
         breakdown = f"NEUT {format_gj(snapshot['neut_gj'])} GJ  |  NOS {format_gj(snapshot['nos_gj'])} GJ"
@@ -3000,12 +3082,36 @@ class CharacterWindow:
         return text + "…"
 
     def _update_combat_meters(self):
+        self._refresh_battle_choices()
         self._update_neut_meter()
         snapshot = (self._frozen.get("combat") if self._st == "stopped" and self._frozen else None)
-        self._combat_display = snapshot if snapshot is not None else self.data.combat.snapshot()
+        self._combat_display = dict(snapshot if snapshot is not None else self.data.combat.snapshot())
         snapshot = self._combat_display
+        outgoing = self._selected_battle(self._out_battle_var)
+        incoming = self._selected_battle(self._in_battle_var)
+        if outgoing:
+            rows = outgoing['outgoing']['sources']
+            snapshot.update(target=rows[0]['name'] if rows else 'No outgoing damage',
+                            target_dps=rows[0]['peak_rate'] if rows else 0)
+        if incoming:
+            snapshot['attackers'] = [(r['name'], r['peak_amount'], r['peak_rate']) for r in incoming['incoming']['sources'][:3]]
+        self._cset(self._target_heading, text="PEAK TARGET DPS" if outgoing else "TARGET DPS")
+        self._cset(self._target_caption, text=(self._battle_header(outgoing) if outgoing else f"Last target hit / {DPS_W}s average"))
+        self._cset(self._incoming_heading, text="PEAK INCOMING DAMAGE" if incoming else "TOP INCOMING DAMAGE")
+        self._cset(self._incoming_caption, text="Independent attacker peaks / 15s" if incoming else f"Top attackers / last {DPS_W}s")
+        if incoming:
+            detail = f"{self._battle_header(incoming)}\nAll-source peak: {incoming['incoming']['peak_rate']:,.0f} DPS"
+        elif self.battles.active:
+            current = self.battles.active
+            detail = (f"Current fight · {datetime.fromtimestamp(current['start'], timezone.utc):%H:%M:%S} EVE\n"
+                      f"In peak: {current['incoming'].peak/15:,.0f} DPS · Cap: {current['cap_drain'].peak/15:,.1f} GJ/s")
+        else:
+            detail = f"Current · waiting for damage\n{len(self._battle_choices)} saved battles · 60s idle ends fight"
+        if self.battles.error:
+            detail = 'Battle save failed; retrying. Check disk space.'
+        self._cset(self._battle_detail, text=detail)
         status = {"running": "LIVE", "paused": "PAUSED", "stopped": "STOPPED" if self._frozen else "PRESS PLAY"}[self._st]
-        self._cset(self._meter_status, text=status)
+        self._cset(self._meter_status, text="SAVED" if outgoing else status)
         width = self._combat_container.winfo_width()
         width = (width if width > 1 else WIN_W - 16) - 14
         dps_width = self._target_dps_label.winfo_width()
@@ -4192,6 +4298,7 @@ class CharacterWindow:
     # champ), puis annuler les boucles after() — sinon elles se déclencheraient
     # sur des widgets détruits.
     def _quit(self):
+        self.battles.finish('closed')
         d = self.data
 
         # Always save session on close if there's any data worth saving
@@ -4268,6 +4375,7 @@ class CharacterWindow:
         hit = parse_damage(raw) if "(combat)" in raw else None
         if hit is not None:
             direction, amount, name = hit
+            self.battles.damage(ts, direction, amount, name)
             if direction == "to":
                 d.add_dmg_out(ts, amount, name)
             else:
@@ -4277,6 +4385,7 @@ class CharacterWindow:
 
         neut = parse_incoming_cap_drain(raw) if "(combat)" in raw else None
         if neut is not None:
+            self.battles.cap_drain(ts, neut)
             d.cap_drain.add(neut)
             self._anom_combat_event(ts)
             return
@@ -4393,6 +4502,12 @@ class CharacterWindow:
         except Exception:
             _log_exc("CharacterWindow._tick:3393")
 
+        if getattr(self, '_suspended', False) and self.battles.active:
+            self.battles.finish('monitoring_paused')
+        else:
+            if self.battles.active and time.monotonic()-self.battles.last_arrival >= BATTLE_IDLE:
+                self._read_logs_once()  # Drain pending log writes before deciding the fight is quiet.
+            self.battles.poll()
         self._update_combat_meters()
 
         if self._st == "stopped" and self._frozen:
@@ -4450,6 +4565,7 @@ class CharacterWindow:
     # après un site sans que les chiffres continuent de bouger. L'instantané
     # `_frozen` sert exactement à ça ; c'est Reset ou Next Site qui archivent.
     def _stop(self):
+        self.battles.finish('stopped')
         if self._st == "stopped": return
         d = self.data
         try: d.tax = max(0, min(float(self.tax_var.get()) / 100, 1))
@@ -4516,6 +4632,7 @@ class CharacterWindow:
     # je viens de faire » et « ce que je vais faire » : c'est ici qu'une ligne
     # d'historique naît, et c'est le seul moment où les totaux sont perdus.
     def _reset(self):
+        self.battles.finish('reset')
         d = self.data
         char_name = self.char_name
         try: tax_pct = float(self.tax_var.get())
@@ -4883,6 +5000,7 @@ class CharacterWindow:
     # ne s'est passé. Le temps écoulé est versé dans acc_sec et t0 remis à None.
     def _pause(self):
         if self._st == "running":
+            self.battles.finish('paused')
             self._st = "paused"
 
             # Freeze session timer
@@ -5074,10 +5192,10 @@ class MainUISettings:
 
         saved = cfg.get("main_ui", {}).get("settings_pos", "")
         if saved:
-            self.w.geometry(f"380x555{saved}")
+            self.w.geometry(f"380x610{saved}")
         else:
             self.w.geometry(
-                f"380x555+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
+                f"380x610+{parent_root.winfo_x()+30}+{parent_root.winfo_y()+40}")
 
         hdr = tk.Frame(self.w, bg=BG_H, height=32)
         hdr.pack(fill="x")
@@ -5211,6 +5329,14 @@ class MainUISettings:
 
         tk.Label(body, text="Jammed: automatic alerts enabled for your ship.",
                  font=("Consolas", 8), bg=BG_POP, fg=TD).pack(anchor="w", pady=(0, 2))
+        self._battle_count = tk.Label(body, font=("Consolas", 8), bg=BG_POP, fg=TD, anchor="w")
+        self._battle_count.pack(fill="x", pady=(6, 2))
+        self._purge_battles_button = tk.Button(body, text="PURGE SAVED BATTLES", command=self._purge_battles,
+            font=("Consolas", 8, "bold"), bg=BG_H, fg=CR, relief="flat")
+        self._purge_battles_button.pack(anchor="w")
+        self._update_battle_count()
+        self._battle_count_job = self.w.after(1000, self._poll_battle_count)
+        self.w.bind('<Destroy>', self._cancel_battle_count, add='+')
 
         # Photographie des valeurs à l'ouverture : c'est la référence qui permet de
         # savoir s'il reste quelque chose à appliquer.
@@ -5237,6 +5363,38 @@ class MainUISettings:
         # Trace StringVars so any keystroke updates dirty state
         for var in (self.pv, self.av, self.tv, self.iv, self.gv, self._theme_var, self.audio_var, self.voice_var, self.volume_var):
             var.trace_add("write", lambda *_: self._check_dirty())
+
+    def _update_battle_count(self):
+        store = self.main_ui._battle_store
+        self._battle_count.config(text=f"{len(store.records)} saved battles · all characters"
+                                  + (f" · {store.unreadable} unreadable" if store.unreadable else ""))
+
+    def _poll_battle_count(self):
+        self._update_battle_count()
+        self._battle_count_job = self.w.after(1000, self._poll_battle_count)
+
+    def _cancel_battle_count(self, event):
+        if event.widget == self.w:
+            self.w.after_cancel(self._battle_count_job)
+
+    def _purge_battles(self):
+        store = self.main_ui._battle_store
+        pending = sum(len(w.battles.pending) for w in self.main_ui._windows.values())
+        count = len(store.records)+store.unreadable+pending
+        if not messagebox.askyesno("Purge saved battles", f"Delete {count} saved battle summaries for all characters?\n\n"
+            "Active fights, session history and settings are kept. This cannot be undone.", parent=self.w, icon='warning'):
+            return
+        try:
+            store.purge()
+            for win in self.main_ui._windows.values():
+                win.battles.pending.clear()
+                win.battles.error = ''
+                win._out_battle_var.set('Current')
+                win._in_battle_var.set('Current')
+                win._battle_selection_changed()
+        except OSError as exc:
+            messagebox.showerror("Could not purge all battles", str(exc), parent=self.w)
+        self._update_battle_count()
 
     # Comparé à l'instantané pris à l'ouverture plutôt qu'à la config : le
     # joueur peut modifier un champ puis revenir à la valeur d'origine, et dans
@@ -5422,6 +5580,8 @@ class MainUISettings:
             win._fit()
             if not win.root.winfo_viewable():
                 win._suspended = not (self.bgm_var.get() or getattr(win, "_overlay_active", False))
+                if win._suspended:
+                    win.battles.finish('monitoring_paused')
 
         save_config(cfg)
 
@@ -5702,6 +5862,7 @@ class MainUI:
         self.root.attributes("-topmost", True)
 
         self.cfg = load_config()
+        self._battle_store = BattleStore(os.path.join(os.path.dirname(CONFIG_FILE), "battles"))
         apply_theme_colors(self.cfg.get("last_theme", THEME_DEFAULT))
         self.root.attributes("-alpha", self.cfg.get("alpha", DEF_ALPHA))
 
@@ -6604,6 +6765,7 @@ class MainUI:
                 win._suspended = False
             else:
                 win._suspended = True      # stop log reading for this character
+                win.battles.finish('monitoring_paused')
             if char_id in self._rows:
                 self._tv_cache.pop((char_id, "__tag__"), None)
                 self._tv_tag(char_id, "standby", False)

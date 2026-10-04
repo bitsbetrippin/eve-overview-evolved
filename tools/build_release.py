@@ -17,7 +17,7 @@ PYTHON_URL = "https://www.python.org/ftp/python/3.13.15/python-3.13.15-amd64.zip
 PYTHON_SHA256 = "6479223746cdfb79d25865110d6f524ac98de081324e119af1dc3ae36bddc7a5"
 APP_FILES = (
     "app_info.py", "app_paths.py", "startup.py", "ratting.py", "eve_paths.py", "combat_meter.py", "window_placement.py", "neut_meter.py", "ewar_alerts.py",
-    "requirements.txt", "requirements-windows.lock",
+    "battle_history.py", "requirements.txt", "requirements-windows.lock",
 )
 
 
@@ -66,7 +66,7 @@ def build(output, cache, wheel_dir=None):
     ], check=True)
     subprocess.run([str(python), "-I", "-B", str(stage / "app/startup.py"), "--self-test"], check=True)
     # Validate real GUI construction with synthetic/empty data before packaging.
-    for test_file in ("test_release.py", "test_combat.py", "test_panels.py", "test_neuts.py", "test_ewar.py"):
+    for test_file in ("test_release.py", "test_combat.py", "test_panels.py", "test_neuts.py", "test_ewar.py", "test_battles.py"):
         subprocess.run([str(python), "-I", "-B", str(ROOT / "tests" / test_file),
                         "--app", str(stage)], check=True)
     package = output / (RELEASE_NAME + ".zip")
@@ -74,7 +74,7 @@ def build(output, cache, wheel_dir=None):
     assert {p.name for p in stage.iterdir() if p.is_file()} == {"START.bat", "README.md"}
     assert not any(p.is_file() for p in (stage / "data").rglob("*")), "Personal data must not be packaged"
     with zipfile.ZipFile(pending, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as result:
-        for folder in ("data", "data/cache", "data/logs"):
+        for folder in ("data", "data/cache", "data/logs", "data/battles"):
             result.write(stage / folder, (Path(RELEASE_NAME) / folder).as_posix() + "/")
         for path in sorted(stage.rglob("*")):
             if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":

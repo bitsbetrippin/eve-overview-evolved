@@ -1,11 +1,11 @@
 @echo off
 setlocal DisableDelayedExpansion
-title Eve-Overlay-Evolved v0.7.8
+title Eve-Overlay-Evolved v0.8.0
 pushd "%~dp0"
 if errorlevel 1 goto folder_error
 if not exist "runtime\python.exe" goto missing_runtime
 if not exist "app\startup.py" goto missing_files
-echo Starting Eve-Overlay-Evolved v0.7.8...
+echo Starting Eve-Overlay-Evolved v0.8.0...
 "runtime\python.exe" -I -B "app\startup.py" %*
 set "result=%errorlevel%"
 if "%result%"=="0" goto done
@@ -17,7 +17,7 @@ popd
 exit /b %result%
 :missing_runtime
 echo The bundled Python runtime is missing.
-echo Extract the complete Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip release.
+echo Extract the complete Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip release.
 goto failed
 :missing_files
 echo Application files are missing. Extract the complete ZIP and try again.

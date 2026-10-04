@@ -4,7 +4,7 @@
 
 [@bitsbetrippin](https://github.com/bitsbetrippin) contributed the portable
 launch workflow, feature direction, target-DPS and incoming-damage
-improvements, testing, release development and the Eve-Overlay-Evolved
+improvements, local Battle Review, capacitor-pressure history, testing, release development and the Eve-Overlay-Evolved
 identity. This work is maintained in
 [bitsbetrippin/eve-overview-evolved](https://github.com/bitsbetrippin/eve-overview-evolved).
 

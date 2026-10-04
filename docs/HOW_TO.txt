@@ -1,5 +1,5 @@
 ================================================================
- EVE-OVERLAY-EVOLVED v0.7.8 — HOW TO USE
+ EVE-OVERLAY-EVOLVED v0.8.0 — HOW TO USE
 ================================================================
 
 A passive desktop dashboard for EVE Online PvE pilots. It reads
@@ -42,11 +42,11 @@ It does NOT touch the EVE client, network traffic or memory.
   needs is in the gamelog.
 
 ----------------------------------------------------------------
- 3. RUNNING EVE-OVERLAY-EVOLVED v0.7.8
+ 3. RUNNING EVE-OVERLAY-EVOLVED v0.8.0
 ----------------------------------------------------------------
 
   PORTABLE RELEASE:
-    Download Eve-Overlay-Evolved-v0.7.8-Windows-x64.zip.
+    Download Eve-Overlay-Evolved-v0.8.0-Windows-x64.zip.
     Right-click it, choose Extract All, then open the extracted
     folder and double-click START.bat. Keep all files together.
 
@@ -62,7 +62,7 @@ It does NOT touch the EVE client, network traffic or memory.
     including OneDrive and redirected folders. Saved custom log
     paths are preserved; change them in Settings if needed.
 
-  INCOMING CAPACITOR DRAIN (v0.7.8):
+  INCOMING CAPACITOR DRAIN (v0.8.0):
     The amber INCOMING CAP DRAIN panel sits below TOP INCOMING DAMAGE.
     It combines neutralizer and Nosferatu loss in its session GJ and GJ/sec.
     Separate NEUT/NOS subtotals and top-source hover details show the split.
@@ -744,7 +744,7 @@ FLEET TARGET DPS: Live 15-second target DPS is shown beside each pilot.
 Enable Background Monitoring, Apply, then hide dashboards to keep tracking.
 OVL controls the separate overlay. Start each pilot with Play first.
 
-ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.7.8)
+ALLIANCE LOGO / ROBOTIC EWAR VOICE (v0.8.0)
 Settings > SHOW THE INITIATIVE LOGO > APPLY enables the bundled INIT. logo.
 Settings > EWAR SOUND chooses Voice / Beep / Off. Use TEST buttons to preview.
 Voice uses your selected clip when you are scrambled / pointed / webbed / jammed.
@@ -755,17 +755,30 @@ Each effect repeats at most every 10 seconds per personal/nearby group, fleet-wi
 not mixed together. Personal queued alerts expire after 15 seconds; nearby after 8.
 These are log-event warnings, not continuous tackle status.
 
-VOICE STYLE / ALERT VOLUME (v0.7.8)
+VOICE STYLE / ALERT VOLUME (v0.8.0)
 Settings > VOICE STYLE: Robot / Commanding / Dramatic / News anchor / SamL.
 Settings > ALERT VOLUME: Low 100% / Medium 200% / High 300% digital gain.
 TEST previews the current selection; APPLY saves it for live alerts.
 Applies to Voice and Beep. Peaks are limited; Windows volume is unchanged.
 Original synthetic styles, not exact celebrity replicas. No runtime downloads.
 
-SAML VOICE (v0.7.8)
+SAML VOICE (v0.8.0)
 Settings > EWAR SOUND: Voice > VOICE STYLE: SamL > APPLY.
 Scrambled / Pointed / Webbed / Jammed use automatic personal-event triggers.
 Jammed is live for every voice style, using confirmed "You're jammed by" combat records.
 Generic lock failures are ignored. Nearby/outgoing jam detection is not yet supported.
 The four WAVs are under app/assets/voices/saml. Full supplied audio is preserved.
 All clips support Low / Medium / High volume and offline playback.
+
+
+BATTLE REVIEW — v0.8.0 BETA
+Damage dealt or received starts a fight; 60 seconds without damage saves it.
+The top aqua dropdown selects Current or a saved highest single-target 15s peak.
+Battle Review below incoming damage independently selects saved attacker peaks
+and incoming cap drain. Its amber panel shows peak GJ/s, total loss and NEUT/NOS.
+Both views keep live recording and fleet DPS running; select Current to return.
+Saved titles show the date and EVE/UTC range. Data lives in data/battles/.
+Settings > PURGE SAVED BATTLES clears all character archives after confirmation,
+keeping active fights, settings and income history. Pause/Stop/Reset/Quit save
+an active fight as [partial]. Cap drain, EWAR and misses alone do not start or
+extend fights. Old damage logs are not imported. See USER-GUIDE.md for details.

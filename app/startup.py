@@ -19,7 +19,7 @@ def prepare():
     os.environ["TK_LIBRARY"] = "runtime/tcl/tk8.6"
     os.environ.pop("TCLLIBPATH", None)
     for name in ("app/app_info.py", "app/app_paths.py", "app/ratting.py", "app/eve_paths.py", "app/combat_meter.py", "app/window_placement.py", "app/neut_meter.py", "app/ewar_alerts.py", "runtime/tcl/tcl8.6/init.tcl",
-                 "runtime/tcl/tk8.6/tk.tcl", "app/assets/initiative.png", "app/assets/PVE.ico"):
+                 "app/battle_history.py", "runtime/tcl/tk8.6/tk.tcl", "app/assets/initiative.png", "app/assets/PVE.ico"):
         if not (ROOT / name).is_file():
             raise FileNotFoundError(f"Missing {name}. Extract the entire portable release ZIP.")
 
@@ -47,7 +47,7 @@ def self_test():
         root.update_idletasks()
     finally:
         root.destroy()
-    for name in ("ratting.py", "combat_meter.py", "window_placement.py", "neut_meter.py", "ewar_alerts.py", "eve_paths.py", "app_info.py", "app_paths.py"):
+    for name in ("ratting.py", "combat_meter.py", "window_placement.py", "neut_meter.py", "ewar_alerts.py", "eve_paths.py", "app_info.py", "app_paths.py", "battle_history.py"):
         compile((ROOT / "app" / name).read_bytes(), name, "exec")
     print(json.dumps({
         "status": "ok", "app": APP_NAME, "release": RELEASE_TAG,
